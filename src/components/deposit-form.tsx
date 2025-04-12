@@ -42,7 +42,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
   useEffect(() => {
     const updateContractInfo = async () => {
       if (amount && !isNaN(Number.parseFloat(amount)) && Number.parseFloat(amount) > 0) {
-        const isCall = directionalStrategy === "bullish"
+        // const isCall = directionalStrategy === "bullish" // Removed unused var from useEffect
         // Mock calculation since calculateContracts is not available
         setContractInfo({
           numContracts: Math.floor(Number.parseFloat(amount) / 100),
