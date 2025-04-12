@@ -407,6 +407,7 @@ export function useVaultData() {
     condorVaultShares,
     needsApproval,
     hasQueuedDeposits,
+    wrapper,
     
     // State
     isLoading,

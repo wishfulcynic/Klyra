@@ -8,6 +8,7 @@ import { useWallet } from "@/hooks/use-wallet"
 import { useVaultData } from "@/hooks/use-vault-data"
 import { formatCurrency } from "@/lib/utils"
 import { AlertCircle, Info, CreditCard, Wallet, ArrowRight, TrendingUp, TrendingDown } from "lucide-react"
+import { ethers } from "ethers"
 
 interface DepositFormProps {
   vaultType: VaultType
@@ -23,7 +24,8 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     isLoading,
     callVaultData,
     putVaultData,
-    condorVaultData
+    condorVaultData,
+    wrapper
   } = useVaultData()
   const [amount, setAmount] = useState("")
   const [directionalStrategy, setDirectionalStrategy] = useState<"bullish" | "bearish">("bullish")
@@ -31,6 +33,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     numContracts: 0,
     strikes: [],
   })
+  const [calculationError, setCalculationError] = useState<string | null>(null)
 
   // Get the appropriate vault data based on vault type
   const vault = vaultType === VaultType.DIRECTIONAL ? 
@@ -38,23 +41,49 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     condorVaultData
   const vaultColor = vaultType === VaultType.DIRECTIONAL ? "indigo" : "purple"
 
-  // Update contract info when amount changes
+  // Update contract info when amount changes, using actual contract calls
   useEffect(() => {
     const updateContractInfo = async () => {
-      if (amount && !isNaN(Number.parseFloat(amount)) && Number.parseFloat(amount) > 0) {
-        // const isCall = directionalStrategy === "bullish" // Removed unused var from useEffect
-        // Mock calculation since calculateContracts is not available
-        setContractInfo({
-          numContracts: Math.floor(Number.parseFloat(amount) / 100),
-          strikes: [1800, 2000, 2200]
-        })
-      } else {
+      setCalculationError(null)
+      if (!wrapper || !amount || isNaN(Number.parseFloat(amount)) || Number.parseFloat(amount) <= 0) {
         setContractInfo({ numContracts: 0, strikes: [] })
+        return
+      }
+
+      try {
+        // Parse amount to 18 decimals for sUSD
+        const parsedAmount = ethers.parseUnits(amount, 18).toString()
+        let contractsBigInt: bigint
+        let strikesBigInt: bigint[]
+
+        if (vaultType === VaultType.DIRECTIONAL) {
+          const isCall = directionalStrategy === "bullish"
+          const result = await wrapper.calculateDirectionalContracts(parsedAmount, isCall)
+          contractsBigInt = result.contracts
+          strikesBigInt = result.strikes
+        } else {
+          const result = await wrapper.calculateCondorContracts(parsedAmount)
+          contractsBigInt = result.contracts
+          strikesBigInt = result.strikes
+        }
+
+        // Format strikes (assuming 8 decimals for price)
+        const formattedStrikes = strikesBigInt.map(s => Number(ethers.formatUnits(s, 8)))
+
+        setContractInfo({
+          numContracts: Number(contractsBigInt),
+          strikes: formattedStrikes
+        })
+
+      } catch (error) {
+        console.error("Error calculating contract info:", error)
+        setContractInfo({ numContracts: 0, strikes: [] })
+        setCalculationError("Failed to calculate contract details.")
       }
     }
 
     updateContractInfo()
-  }, [amount, vaultType, directionalStrategy])
+  }, [amount, vaultType, directionalStrategy, wrapper])
 
   const handleMaxClick = () => {
     setAmount(userSusdsBalance)
@@ -71,11 +100,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     const amountValue = Number.parseFloat(amount)
     if (isNaN(amountValue) || amountValue <= 0) return
 
-    // Ensure isCall is removed or commented out
-    // const isCall = directionalStrategy === "bullish"; 
-    
     if (vaultType === VaultType.DIRECTIONAL) {
-      // Determine isCall directly where needed
       await depositDirectional(amount, directionalStrategy === "bullish") 
     } else {
       await depositCondor(amount)
@@ -84,7 +109,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     setAmount("")
   }
 
-  const userAllowance = 0 // Default value since actual allowance is not available
+  const userAllowance = 0
   const needsApprovalForAmount = Number.parseFloat(amount || "0") > userAllowance
   const insufficientBalance = Number.parseFloat(amount || "0") > Number(userSusdsBalance)
   const isDepositing = isLoading
@@ -235,6 +260,9 @@ export function DepositForm({ vaultType }: DepositFormProps) {
                   <span> with strikes at {contractInfo.strikes.map((s) => `$${s.toFixed(2)}`).join(", ")}</span>
                 )}
               </p>
+            )}
+            {calculationError && (
+              <p className="mt-1 text-xs text-red-500">{calculationError}</p>
             )}
           </div>
         )}
