@@ -98,7 +98,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     isDepositing
 
   // Calculate estimated shares
-  const estimatedShares = amount && !isNaN(Number.parseFloat(amount)) && vault ? 
+  const estimatedShares = amount && !isNaN(Number.parseFloat(amount)) && vault && vault.sharePrice ? 
     Number.parseFloat(amount) / Number.parseFloat(vault.sharePrice) : 0
 
   return (

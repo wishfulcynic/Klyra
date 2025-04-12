@@ -14,35 +14,35 @@ export type PerformanceMetrics = {
 
 export type VaultData = {
   // General data
-  sharePrice: string;
-  totalValueLocked: string;
-  remainingCapacity: string;
-  isActiveDeposit: boolean;
-  queuedDeposits: number;
+  sharePrice: string | null; // Allow null for loading/error states
+  totalValueLocked: string | null;
+  remainingCapacity: string | null;
+  isActiveDeposit: boolean | null;
+  queuedDeposits: number | null;
   
   // Performance metrics
-  metrics: PerformanceMetrics;
+  metrics: PerformanceMetrics | null;
   
   // Strike data
-  strikes: string[];
-  currentPrice: string;
-  nextCycleExpiry: number;
+  strikes: string[] | null;
+  currentPrice: string | null;
+  nextCycleExpiry: number | null; // Keep as number (seconds since epoch)
 };
 
 export function useVaultData() {
   const { address, isConnected, chainId } = useWallet()
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true) // Start loading initially
   const [error, setError] = useState<string | null>(null)
   
   // Wrapper instance
   const [wrapper, setWrapper] = useState<StrategyVaultWrapper | null>(null)
   
-  // Vault data
+  // Vault data - initialize to null
   const [callVaultData, setCallVaultData] = useState<VaultData | null>(null)
   const [putVaultData, setPutVaultData] = useState<VaultData | null>(null)
   const [condorVaultData, setCondorVaultData] = useState<VaultData | null>(null)
-  const [totalValueLocked, setTotalValueLocked] = useState<string>('0')
-  const [hasQueuedDeposits, setHasQueuedDeposits] = useState(false)
+  const [totalValueLocked, setTotalValueLocked] = useState<string | null>(null)
+  const [hasQueuedDeposits, setHasQueuedDeposits] = useState<boolean>(false)
   
   // User balances
   const [userSusdsBalance, setUserSusdsBalance] = useState<string>('0')
@@ -53,74 +53,34 @@ export function useVaultData() {
   // Interaction state
   const [needsApproval, setNeedsApproval] = useState(true)
   
-  // Initialize with demo data immediately
+  // Initialize wrapper (will attempt read-only init even if not connected)
   useEffect(() => {
-    // Always set demo data right away, even if wallet is connected
-    // This ensures we always have something to show
-    const mockMetrics = {
-      apy: '18.4%',
-      successRate: '82%',
-      bestReturn: '+12.4%',
-      avgYield: '+1.8%/wk',
-    };
-    
-    const mockVaultData: VaultData = {
-      sharePrice: '1.0456',
-      totalValueLocked: '2450000',
-      remainingCapacity: '2550000',
-      isActiveDeposit: false,
-      queuedDeposits: 0,
-      metrics: mockMetrics,
-      strikes: ['1800.00', '2000.00', '2200.00', '2400.00'],
-      currentPrice: '2100.00',
-      nextCycleExpiry: Math.floor(Date.now() / 1000) + 4 * 24 * 60 * 60,
-    };
-    
-    // Apply demo data immediately
-    setCallVaultData({...mockVaultData});
-    setPutVaultData({...mockVaultData, 
-      metrics: {...mockMetrics, apy: '15.2%'},
-      strikes: ['1850.00', '1950.00', '2050.00', '2150.00']
-    });
-    setCondorVaultData({...mockVaultData, 
-      metrics: {...mockMetrics, apy: '12.6%', successRate: '92%'},
-      strikes: ['1900.00', '2000.00', '2200.00', '2300.00']
-    });
-    
-    setTotalValueLocked('5200000');
-    
-    // If not connected, we're done - just show the mock data
-    if (!isConnected) {
-      setIsLoading(false);
-    }
-  }, []);  // Empty dependency array means this runs once on mount
-  
-  // Initialize wrapper when wallet is connected
-  useEffect(() => {
-    if (!isConnected || !address) {
-      setWrapper(null)
-      return
-    }
-    
     const initWrapper = async () => {
       try {
+        // Initialize wrapper, passing address string or undefined
         const newWrapper = new StrategyVaultWrapper()
-        await newWrapper.init(address)
+        // Ensure address is either string or undefined, converting null if necessary
+        const userAddressForInit = (isConnected && address) ? address : undefined;
+        await newWrapper.init(userAddressForInit)
         setWrapper(newWrapper)
       } catch (error) {
         console.error("Failed to initialize contract wrapper:", error)
-        setError("Failed to connect to contracts. Please make sure your wallet is connected properly.")
+        setError("Failed to connect to contracts. Please check console.")
+        setIsLoading(false) // Stop loading on init error
       }
     }
     
     initWrapper()
-  }, [address, isConnected])
+  }, [address, isConnected]) // Re-init if connection status or address changes
   
   // Fetch data when wrapper is available
   useEffect(() => {
-    if (!wrapper || !isConnected || !address) {
-      setIsLoading(false)
-      return
+    // Don't fetch if wrapper hasn't initialized
+    if (!wrapper) {
+        // If not connected and wrapper init failed, stop loading.
+        // If connected, wrapper init might still be in progress.
+        if (!isConnected) setIsLoading(false);
+        return;
     }
     
     let mounted = true
@@ -135,43 +95,61 @@ export function useVaultData() {
         );
         
         // Get total TVL with timeout
-        let tvl;
         try {
           const tvlPromise = wrapper.getTotalValueLocked();
-          tvl = await Promise.race([tvlPromise, timeout]) as bigint;
-        } catch (err) {
-          console.error('Error fetching TVL, using default:', err);
-          tvl = BigInt('5000000000000000000000'); // Default 5000 tokens
-        }
-        
-        if (mounted) {
-          setTotalValueLocked(ethers.formatUnits(tvl, 18))
-        }
-        
-        // Other data fetching with error handling
-        try {
-          const capacity = await Promise.race([wrapper.getRemainingCapacity(), timeout]);
-          // Use capacity data (not shown in current code)
-        } catch (err) {
-          console.error('Error fetching capacity:', err);
-        }
-        
-        try {
-          const hasApproved = await Promise.race([wrapper.checkAllowance(address), timeout]);
+          const tvl = await Promise.race([tvlPromise, timeout]) as bigint;
           if (mounted) {
-            setNeedsApproval(!hasApproved)
+            setTotalValueLocked(ethers.formatUnits(tvl, 18))
           }
         } catch (err) {
-          console.error('Error checking allowance:', err);
+          console.error('Error fetching TVL:', err);
+          if (mounted) setTotalValueLocked(null); // Set to null on error
         }
         
-        try {
-          const balance = await Promise.race([wrapper.susdsToken?.balanceOf(address), timeout]);
-          if (mounted && balance) {
-            setUserSusdsBalance(ethers.formatUnits(balance, 18))
-          }
-        } catch (err) {
-          console.error('Error fetching balance:', err);
+        // Only fetch user-specific data if connected
+        if (isConnected && address) {
+             try {
+               const hasApproved = await Promise.race([wrapper.checkAllowance(address), timeout]);
+               if (mounted) {
+                 setNeedsApproval(!hasApproved)
+               }
+             } catch (err) {
+               console.error('Error checking allowance:', err);
+               // Keep previous state or set default?
+             }
+            
+             try {
+               // Use the dedicated method which utilizes the read instance
+               const balanceResult = await Promise.race([wrapper.getSusdsBalance(address), timeout]);
+               // Check if the result is a valid bigint before formatting
+               if (mounted && typeof balanceResult === 'bigint') {
+                 setUserSusdsBalance(ethers.formatUnits(balanceResult, 18))
+               } else if (mounted) {
+                  console.warn('Received invalid balance result:', balanceResult);
+                  setUserSusdsBalance('0'); // Set to 0 on error/timeout
+               }
+             } catch (err) {
+               console.error('Error fetching balance:', err);
+                if (mounted) {
+                    setUserSusdsBalance('0'); // Set to 0 on error
+                }
+             }
+             
+             // TODO: Fetch user shares (call, put, condor)
+             if (mounted) {
+                 setCallVaultShares('0'); 
+                 setPutVaultShares('0');
+                 setCondorVaultShares('0');
+             } 
+        } else {
+            // Reset user-specific data if not connected
+            if (mounted) {
+                setUserSusdsBalance('0');
+                setNeedsApproval(true);
+                setCallVaultShares('0'); 
+                setPutVaultShares('0');
+                setCondorVaultShares('0');
+            }
         }
         
         try {
@@ -182,35 +160,44 @@ export function useVaultData() {
           }
         } catch (err) {
           console.error('Error fetching queued deposits:', err);
+          if (mounted) setHasQueuedDeposits(false);
         }
         
-        // Fetch vault data with error handling
+        // Fetch vault-specific data, handle errors by setting data to null
         try {
-          await fetchVaultData(wrapper, true, true, setCallVaultData, setCallVaultShares)
+          const callData = await fetchVaultData(wrapper, true, true); // Removed setters
+          if (mounted) setCallVaultData(callData);
         } catch (err) {
           console.error('Error fetching call vault data:', err);
-          // Set default data if fetching fails
-          setDefaultVaultData(setCallVaultData, 'call');
+          if (mounted) setCallVaultData(null);
         }
         
         try {
-          await fetchVaultData(wrapper, true, false, setPutVaultData, setPutVaultShares)
+          const putData = await fetchVaultData(wrapper, true, false);
+          if (mounted) setPutVaultData(putData);
         } catch (err) {
           console.error('Error fetching put vault data:', err);
-          setDefaultVaultData(setPutVaultData, 'put');
+           if (mounted) setPutVaultData(null);
         }
         
         try {
-          await fetchVaultData(wrapper, false, false, setCondorVaultData, setCondorVaultShares)
+           const condorData = await fetchVaultData(wrapper, false, false);
+           if (mounted) setCondorVaultData(condorData);
         } catch (err) {
           console.error('Error fetching condor vault data:', err);
-          setDefaultVaultData(setCondorVaultData, 'condor');
+          if (mounted) setCondorVaultData(null);
         }
         
       } catch (err) {
+        // Catch errors from Promise.race or other general errors
         console.error('Error fetching vault data:', err)
         if (mounted) {
-          setError('Failed to load vault data')
+          setError('Failed to load vault data');
+          // Set all vault data to null on major fetch error
+          setCallVaultData(null);
+          setPutVaultData(null);
+          setCondorVaultData(null);
+          setTotalValueLocked(null);
         }
       } finally {
         if (mounted) {
@@ -228,41 +215,20 @@ export function useVaultData() {
       mounted = false
       clearInterval(intervalId)
     }
-  }, [wrapper, isConnected, address])
+  }, [wrapper, isConnected, address]) // Rerun if wrapper, connection, or address changes
   
-  // Helper function to set default vault data if fetching fails
-  const setDefaultVaultData = (setVaultData: (data: VaultData) => void, vaultType: string) => {
-    const apy = vaultType === 'call' ? '18.4%' : vaultType === 'put' ? '15.2%' : '12.6%';
-    const successRate = vaultType === 'condor' ? '92%' : '82%';
-    
-    setVaultData({
-      sharePrice: '1.0456',
-      totalValueLocked: '2450000',
-      remainingCapacity: '2550000',
-      isActiveDeposit: false,
-      queuedDeposits: 0,
-      metrics: {
-        apy,
-        successRate,
-        bestReturn: '+12.4%',
-        avgYield: '+1.8%/wk',
-      },
-      strikes: ['1800.00', '2000.00', '2200.00', '2400.00'],
-      currentPrice: '2100.00',
-      nextCycleExpiry: Math.floor(Date.now() / 1000) + 4 * 24 * 60 * 60,
-    });
-  };
   
   /**
    * Helper function to fetch data for a specific vault
+   * Now returns the data object or throws an error
    */
   const fetchVaultData = async (
     wrapper: StrategyVaultWrapper,
     isDirectional: boolean,
-    isCall: boolean,
-    setVaultData: (data: VaultData) => void,
-    setUserShares: (shares: string) => void
-  ) => {
+    isCall: boolean
+  ): Promise<VaultData> => {
+    let expiryTimestamp: bigint | null = null;
+
     // Get metrics
     const metrics = await wrapper.getPerformanceMetrics(isDirectional, isCall)
     
@@ -275,18 +241,36 @@ export function useVaultData() {
       : await wrapper.getCondorStrikes()
     
     // Get current price
-    const currentPrice = await wrapper.getCurrentPrice(isCall)
+    const currentPrice = await wrapper.getCurrentPrice(isCall) // Note: isCall might not be relevant for condor price
     
-    // Check if active deposit
-    const dirQueuedDeposits = await wrapper.getQueuedDepositsCount(isDirectional)
+    // Check if active deposit queue (directional only for now)
+    const queuedDepositsCount = isDirectional ? await wrapper.getQueuedDepositsCount(isDirectional) : BigInt(0);
+
+    // Fetch expiry timestamp for directional vaults
+    if (isDirectional && wrapper.readWrapper) {
+      try {
+        const cycleInfo = await wrapper.readWrapper.vaultCycles(isCall);
+        // cycleInfo will be a struct-like array: [startTime, endTime, active, nextExpiryTimestamp]
+        if (cycleInfo && cycleInfo.length >= 4) {
+           expiryTimestamp = BigInt(cycleInfo[3]); // Index 3 is nextExpiryTimestamp
+        }
+      } catch (err) {
+         console.error(`Error fetching vaultCycles for isCall=${isCall}:`, err);
+         expiryTimestamp = null; // Set to null on error
+      }
+    } // Condor expiry remains null for now
+
+    // TODO: Fetch real TVL/Capacity if available per vault
+    // const vaultSpecificTVL = ...
+    // const vaultRemainingCapacity = ...
     
     // Create vault data object
     const vaultData: VaultData = {
       sharePrice: ethers.formatUnits(sharePrice, 18),
-      totalValueLocked: '0', // Will be calculated from TVL
-      remainingCapacity: '0', // Will be calculated from capacity
-      isActiveDeposit: dirQueuedDeposits > BigInt(0),
-      queuedDeposits: Number(dirQueuedDeposits),
+      totalValueLocked: null, // Placeholder - Use overall TVL for now
+      remainingCapacity: null, // Placeholder - Needs specific logic
+      isActiveDeposit: queuedDepositsCount > BigInt(0),
+      queuedDeposits: Number(queuedDepositsCount),
       
       metrics: {
         apy: (Number(metrics.apy) / 100).toFixed(2) + '%',
@@ -297,13 +281,11 @@ export function useVaultData() {
       
       strikes: strikes.map(s => ethers.formatUnits(s, 8)),
       currentPrice: ethers.formatUnits(currentPrice, 8),
-      nextCycleExpiry: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // Placeholder 7d
+      // Convert bigint timestamp to number (seconds since epoch), or keep null
+      nextCycleExpiry: expiryTimestamp !== null ? Number(expiryTimestamp) : null,
     }
     
-    setVaultData(vaultData)
-    
-    // TODO: Add user shares once we connect to vault contracts
-    setUserShares('0')
+    return vaultData;
   }
   
   // Helper functions for interacting with the contract
@@ -333,6 +315,8 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(amount, 18)
       const tx = await wrapper.depositDirectional(parsedAmount.toString(), isCall)
       await tx.wait()
+      // Trigger data refresh after successful tx
+      setWrapper(wrapper); // Re-setting wrapper triggers useEffect
       return true
     } catch (err) {
       console.error('Error depositing to directional vault:', err)
@@ -349,6 +333,8 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(amount, 18)
       const tx = await wrapper.depositCondor(parsedAmount.toString())
       await tx.wait()
+      // Trigger data refresh after successful tx
+       setWrapper(wrapper);
       return true
     } catch (err) {
       console.error('Error depositing to condor vault:', err)
@@ -365,6 +351,8 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(shareAmount, 18)
       const tx = await wrapper.withdrawDirectional(parsedAmount.toString(), isCall)
       await tx.wait()
+      // Trigger data refresh after successful tx
+       setWrapper(wrapper);
       return true
     } catch (err) {
       console.error('Error withdrawing from directional vault:', err)
@@ -381,6 +369,8 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(shareAmount, 18)
       const tx = await wrapper.withdrawCondor(parsedAmount.toString())
       await tx.wait()
+      // Trigger data refresh after successful tx
+       setWrapper(wrapper);
       return true
     } catch (err) {
       console.error('Error withdrawing from condor vault:', err)
@@ -396,6 +386,8 @@ export function useVaultData() {
     try {
       const tx = await wrapper.claimProfits(isDirectional, isCall)
       await tx.wait()
+      // Trigger data refresh after successful tx
+       setWrapper(wrapper);
       return true
     } catch (err) {
       console.error('Error claiming profits:', err)

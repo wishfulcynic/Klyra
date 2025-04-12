@@ -104,7 +104,7 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
     Number.parseFloat(amount) <= 0 ||
     insufficientShares ||
     isWithdrawing ||
-    vault.isActiveDeposit
+    (vault.isActiveDeposit ?? true);
 
   if (isLoading && !vault) {
      return <div className="text-center p-4 text-gray-500">Loading vault data...</div>;

@@ -68,6 +68,20 @@ The design philosophy mirrors the simplicity and transparency goals seen in rela
 
 ---
 
+## Deployed Contracts (Base Mainnet - Chain ID 8453)
+
+These addresses are configured in `src/lib/contract.ts`:
+
+-   **sUSDe Token:** `0x820C137fa70C8691f0e44Dc420a5e53c168921Dc`
+-   **Call Vault:** `0x8E7A90F13e3720C5415E621e9Db68B79b1a0cc39`
+-   **Put Vault:** `0xA49b907734aF657c59Bdee11623eE45d3644399e`
+-   **Condor Vault:** `0x82eD817EDd587b466D7dFAb08A759B7870812fF7`
+-   **StrategyVaultWrapper:** `0xa10d4b0e58FABe45F51cC0cbB43dF2C88F9c76bE`
+
+*(Note: OptionFactory and Option implementations are dependencies for the vaults but not directly interacted with by this frontend.)*
+
+---
+
 ## Getting Started
 
 To run this frontend locally:
@@ -86,7 +100,10 @@ To run this frontend locally:
     ```
 
 3.  **Environment Variables:**
-    *   Ensure you have a `.env.local` file if required (e.g., for RPC URLs or specific API keys not hardcoded). Check if any environment variables are expected by the current configuration. *Based on `src/lib/contract.ts`, addresses seem hardcoded, but an RPC URL might be needed.*
+    *   Ensure you have a `.env.local` file with your Base RPC URL:
+      ```
+      NEXT_PUBLIC_BASE_RPC_URL=https://your-base-rpc-url
+      ```
 
 4.  **Run the development server:**
     ```bash
@@ -98,7 +115,7 @@ To run this frontend locally:
 5.  **Open your browser:**
     Navigate to `http://localhost:3000` (or the specified port).
 
-6.  **Connect Wallet:** Ensure you have a browser wallet like MetaMask installed and connected to the appropriate network (e.g., Base Sepolia for testing, Base Mainnet for production, matching the deployed contract addresses in `src/lib/contract.ts`).
+6.  **Connect Wallet:** Ensure you have a browser wallet like MetaMask installed and connected to Base Mainnet (Chain ID 8453).
 
 ---
 

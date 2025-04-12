@@ -29,11 +29,11 @@ export const KLYRA_CONTRACT_ABI = [
 export const CONTRACT_ADDRESSES = {
   // Base network addresses
   BASE: {
-    WRAPPER: "0x...", // Replace with actual address
-    SUSDS: "0x5875eEE11Cf8398102FdAd704C9E96607675467a", // sUSDS on Base
-    CALL_VAULT: "0x...", // Replace with actual address
-    PUT_VAULT: "0x...", // Replace with actual address
-    CONDOR_VAULT: "0x...", // Replace with actual address
+    WRAPPER: "0xa10d4b0e58FABe45F51cC0cbB43dF2C88F9c76bE", // Updated
+    SUSDS: "0x820C137fa70C8691f0e44Dc420a5e53c168921Dc", // sUSDS on Base - Updated
+    CALL_VAULT: "0x8E7A90F13e3720C5415E621e9Db68B79b1a0cc39", // Updated
+    PUT_VAULT: "0xA49b907734aF657c59Bdee11623eE45d3644399e", // Updated
+    CONDOR_VAULT: "0x82eD817EDd587b466D7dFAb08A759B7870812fF7", // Updated
   }
 };
 
@@ -43,26 +43,25 @@ export const SUPPORTED_CHAINS = {
   // Add more chains as needed
 };
 
-// RPC URL for read-only operations when wallet is not connected
-const RPC_URL = "https://eth-mainnet.g.alchemy.com/v2/your-api-key" // Replace with your RPC provider
+// Commenting out unused RPC_URL and helper functions
+/*
+// Example RPC URL - Replace with your actual provider URL
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/your-api-key';
 
 // Helper function to get contract instance
 export async function getContract(needSigner = false) {
   try {
-    let provider: ethers.Provider;
-    let signer = null;
+    let provider: ethers.Provider | ethers.Signer = new ethers.JsonRpcProvider(RPC_URL);
+    let signer: ethers.Signer | null = null;
 
-    // Check if we're in a browser environment and have access to window.ethereum
-    if (typeof window !== "undefined" && window.ethereum) {
-      provider = new ethers.BrowserProvider(window.ethereum);
-
-      // Only try to get a signer if we need one and the user is connected
-      if (needSigner && window.ethereum.selectedAddress) {
-        signer = await (provider as ethers.BrowserProvider).getSigner();
-      }
-    } else {
-      // Fallback to a read-only provider if no wallet is available
-      provider = new ethers.JsonRpcProvider(RPC_URL);
+    if (needSigner && typeof window !== 'undefined' && window.ethereum) {
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      signer = await browserProvider.getSigner();
+      provider = signer;
+    } else if (needSigner) {
+      console.warn("Signer requested, but window.ethereum is not available.");
+      // Fallback or throw error depending on requirements
+      // For now, just return provider without signer
     }
 
     // Return contract with signer if available, otherwise with provider
@@ -77,26 +76,26 @@ export async function getContract(needSigner = false) {
 // Get stable token contract
 export async function getStableTokenContract(needSigner = false) {
   try {
-    let provider: ethers.Provider;
-    let signer = null;
+    let provider: ethers.Provider | ethers.Signer = new ethers.JsonRpcProvider(RPC_URL);
+    let signer: ethers.Signer | null = null;
 
-    if (typeof window !== "undefined" && window.ethereum) {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      if (needSigner && window.ethereum.selectedAddress) {
-        signer = await (provider as ethers.BrowserProvider).getSigner();
-      }
-    } else {
-      provider = new ethers.JsonRpcProvider(RPC_URL);
+    if (needSigner && typeof window !== 'undefined' && window.ethereum) {
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      signer = await browserProvider.getSigner();
+      provider = signer;
+    } else if (needSigner) {
+      console.warn("Signer requested, but window.ethereum is not available.");
     }
 
     // Use a basic ERC20 ABI for the stable token
     const erc20Abi = [
+      "function name() view returns (string)",
+      "function symbol() view returns (string)",
+      "function decimals() view returns (uint8)",
       "function balanceOf(address owner) view returns (uint256)",
       "function approve(address spender, uint256 amount) returns (bool)",
-      "function allowance(address owner, address spender) view returns (uint256)",
-      "function transfer(address to, uint256 amount) returns (bool)",
+      "function allowance(address owner, address spender) view returns (uint256)"
     ];
-
     const addresses = CONTRACT_ADDRESSES.BASE;
     return new ethers.Contract(addresses.SUSDS, erc20Abi, signer || provider);
   } catch (error) {
@@ -104,6 +103,7 @@ export async function getStableTokenContract(needSigner = false) {
     return null;
   }
 }
+*/
 
 // Check if wallet is connected
 export function isWalletConnected(): boolean {
@@ -197,6 +197,9 @@ declare global {
   }
 }
 
+console.log("RPC URL Used:", process.env.NEXT_PUBLIC_BASE_RPC_URL); // DEBUG LINE
+const readProvider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_BASE_RPC_URL || '');
+
 /**
  * Wrapper class for interacting with the Strategy Vault Wrapper contract
  */
@@ -204,123 +207,166 @@ export class StrategyVaultWrapper {
   wrapper: ethers.Contract | null = null;
   susdsToken: ethers.Contract | null = null;
   private provider: ethers.BrowserProvider | null = null;
+  readWrapper: ethers.Contract | null = null; // Read-only instance - Changed to public
+  readSusdsToken: ethers.Contract | null = null; // Read-only instance - Changed to public
   private chainId: number | null = null;
   
   /**
    * Initialize contracts - must be called before using any other methods
    */
-  async init(userAddress: string): Promise<void> {
+  async init(userAddress?: string): Promise<void> {
     try {
-      // We need to have metamask connected to proceed
-      if (!window.ethereum || !userAddress) {
-        throw new Error("No ethereum provider or user address available");
-      }
-      
-      // Create provider from window.ethereum
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await this.provider.getSigner();
-      
-      // Make sure signer address matches expected address
-      const signerAddress = await signer.getAddress();
-      if (signerAddress.toLowerCase() !== userAddress.toLowerCase()) {
-        throw new Error("Signer address doesn't match connected wallet");
-      }
-      
-      // Get chain ID
-      const network = await this.provider.getNetwork();
-      this.chainId = Number(network.chainId);
-      
-      // Create contracts
-      const addresses = this.getAddresses();
-      
-      this.wrapper = new ethers.Contract(
+      // Always initialize read-only contracts using the RPC URL
+      const addresses = this.getAddressesForChain(SUPPORTED_CHAINS.BASE_MAINNET); // Assuming Base Mainnet for now
+      this.readWrapper = new ethers.Contract(
         addresses.WRAPPER,
         STRATEGY_VAULT_WRAPPER_ABI,
-        signer
+        readProvider
       );
-      
-      this.susdsToken = new ethers.Contract(
+      this.readSusdsToken = new ethers.Contract(
         addresses.SUSDS,
         ERC20_ABI,
-        signer
+        readProvider
       );
+
+      // Initialize write contracts only if wallet is connected
+      if (window.ethereum && userAddress) {
+        this.provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await this.provider.getSigner();
+
+        const signerAddress = await signer.getAddress();
+        if (signerAddress.toLowerCase() !== userAddress.toLowerCase()) {
+          console.warn("Signer address doesn't match connected wallet, write operations might fail.");
+          // Don't throw, allow read operations
+        }
+
+        const network = await this.provider.getNetwork();
+        this.chainId = Number(network.chainId);
+
+        // Use the correct addresses based on connected chain
+        const connectedAddresses = this.getAddressesForChain(this.chainId);
+
+        this.wrapper = new ethers.Contract(
+          connectedAddresses.WRAPPER,
+          STRATEGY_VAULT_WRAPPER_ABI,
+          signer
+        );
+
+        this.susdsToken = new ethers.Contract(
+          connectedAddresses.SUSDS,
+          ERC20_ABI,
+          signer
+        );
+      } else {
+        // Not connected, clear write instances
+        this.provider = null;
+        this.wrapper = null;
+        this.susdsToken = null;
+        this.chainId = null; // Or set to default if preferred
+        console.log("Wallet not connected, initializing read-only contracts only.")
+      }
     } catch (error) {
       console.error("Failed to initialize contracts:", error);
+      // Clear all instances on error
+      this.provider = null;
+      this.wrapper = null;
+      this.susdsToken = null;
+      this.readWrapper = null;
+      this.readSusdsToken = null;
+      this.chainId = null;
       throw error;
     }
   }
   
   /**
-   * Check if contracts are initialized
+   * Check if write contracts are initialized (wallet connected)
    */
-  private ensureInitialized(): void {
-    if (!this.wrapper || !this.susdsToken) {
-      throw new Error("Contracts not initialized. Call init() first.");
+  private ensureWriteInitialized(): void {
+    if (!this.wrapper || !this.susdsToken || !this.provider) {
+      throw new Error("Wallet not connected or contracts not initialized for writing. Call init() with address.");
     }
   }
   
   /**
-   * Approve the wrapper to spend tokens
+   * Check if read contracts are initialized
+   */
+  private ensureReadInitialized(): void {
+    if (!this.readWrapper || !this.readSusdsToken) {
+      // This should ideally not happen if init() is called, but good safeguard
+      throw new Error("Read contracts not initialized. Ensure init() has been called.");
+    }
+  }
+  
+  /**
+   * Approve the wrapper to spend tokens (Requires Wallet Connection)
    */
   async approveSusds(amount: string): Promise<ethers.TransactionResponse> {
-    this.ensureInitialized();
-    const addresses = this.getAddresses();
+    this.ensureWriteInitialized();
+    const addresses = this.getAddresses(); // Uses connected chainId
     return await this.susdsToken!.approve(addresses.WRAPPER, amount) as ethers.TransactionResponse;
   }
   
   /**
-   * Check if the wrapper has sufficient allowance
+   * Check if the wrapper has sufficient allowance (Uses Read RPC)
    */
   async checkAllowance(userAddress: string): Promise<boolean> {
-    this.ensureInitialized();
-    const addresses = this.getAddresses();
-    const allowance = await this.susdsToken!.allowance(userAddress, addresses.WRAPPER);
+    this.ensureReadInitialized();
+    const addresses = this.getAddressesForChain(SUPPORTED_CHAINS.BASE_MAINNET); // Use default chain for reads
+    const allowance = await this.readSusdsToken!.allowance(userAddress, addresses.WRAPPER);
     const half = BigInt(ethers.MaxUint256) / BigInt(2);
     return allowance >= half;
   }
   
   /**
-   * Deposit into directional vault
+   * Get user sUSDS balance (Uses Read RPC)
+   */
+   async getSusdsBalance(userAddress: string): Promise<bigint> {
+     this.ensureReadInitialized();
+     return await this.readSusdsToken!.balanceOf(userAddress);
+   }
+  
+  /**
+   * Deposit into directional vault (Requires Wallet Connection)
    */
   async depositDirectional(amount: string, isCall: boolean): Promise<ethers.TransactionResponse> {
-    this.ensureInitialized();
+    this.ensureWriteInitialized();
     return await this.wrapper!.depositDirectional(amount, isCall) as ethers.TransactionResponse;
   }
   
   /**
-   * Deposit into condor vault
+   * Deposit into condor vault (Requires Wallet Connection)
    */
   async depositCondor(amount: string): Promise<ethers.TransactionResponse> {
-    this.ensureInitialized();
+    this.ensureWriteInitialized();
     return await this.wrapper!.depositCondor(amount) as ethers.TransactionResponse;
   }
   
   /**
-   * Withdraw from directional vault
+   * Withdraw from directional vault (Requires Wallet Connection)
    */
   async withdrawDirectional(shareAmount: string, isCall: boolean): Promise<ethers.TransactionResponse> {
-    this.ensureInitialized();
+    this.ensureWriteInitialized();
     return await this.wrapper!.withdrawDirectional(shareAmount, isCall) as ethers.TransactionResponse;
   }
   
   /**
-   * Withdraw from condor vault
+   * Withdraw from condor vault (Requires Wallet Connection)
    */
   async withdrawCondor(shareAmount: string): Promise<ethers.TransactionResponse> {
-    this.ensureInitialized();
+    this.ensureWriteInitialized();
     return await this.wrapper!.withdrawCondor(shareAmount) as ethers.TransactionResponse;
   }
   
   /**
-   * Claim profits from a vault
+   * Claim profits from a vault (Requires Wallet Connection)
    */
   async claimProfits(isDirectional: boolean, isCall: boolean): Promise<ethers.TransactionResponse> {
-    this.ensureInitialized();
+    this.ensureWriteInitialized();
     return await this.wrapper!.claimProfits(isDirectional, isCall) as ethers.TransactionResponse;
   }
   
   /**
-   * Get performance metrics for a vault
+   * Get performance metrics for a vault (Uses Read RPC)
    */
   async getPerformanceMetrics(isDirectional: boolean, isCall: boolean): Promise<{ 
     apy: bigint;
@@ -328,21 +374,21 @@ export class StrategyVaultWrapper {
     bestReturn: bigint;
     avgYield: bigint;
   }> {
-    this.ensureInitialized();
-    const [apy, successRate, bestReturn, avgYield] = await this.wrapper!.getPerformanceMetrics(isDirectional, isCall);
+    this.ensureReadInitialized();
+    const [apy, successRate, bestReturn, avgYield] = await this.readWrapper!.getPerformanceMetrics(isDirectional, isCall);
     return { apy, successRate, bestReturn, avgYield };
   }
   
   /**
-   * Get share price for a vault
+   * Get share price for a vault (Uses Read RPC)
    */
   async getSharePrice(isDirectional: boolean, isCall: boolean): Promise<bigint> {
-    this.ensureInitialized();
-    return await this.wrapper!.getSharePrice(isDirectional, isCall);
+    this.ensureReadInitialized();
+    return await this.readWrapper!.getSharePrice(isDirectional, isCall);
   }
   
   /**
-   * Get remaining capacity for vaults
+   * Get remaining capacity for vaults (Uses Read RPC)
    */
   async getRemainingCapacity(): Promise<{
     overall: bigint;
@@ -350,90 +396,103 @@ export class StrategyVaultWrapper {
     put: bigint;
     condor: bigint;
   }> {
-    this.ensureInitialized();
-    const [overall, call, put, condor] = await this.wrapper!.getRemainingCapacity();
+    this.ensureReadInitialized();
+    const [overall, call, put, condor] = await this.readWrapper!.getRemainingCapacity();
     return { overall, call, put, condor };
   }
   
   /**
-   * Get total value locked across all vaults
+   * Get total value locked across all vaults (Uses Read RPC)
    */
   async getTotalValueLocked(): Promise<bigint> {
-    this.ensureInitialized();
-    return await this.wrapper!.getTotalValueLocked();
+    this.ensureReadInitialized();
+    return await this.readWrapper!.getTotalValueLocked();
   }
   
   /**
-   * Get number of queued deposits
+   * Get number of queued deposits (Uses Read RPC)
    */
   async getQueuedDepositsCount(isDirectional: boolean): Promise<bigint> {
-    this.ensureInitialized();
-    return await this.wrapper!.getQueuedDepositsCount(isDirectional);
+    this.ensureReadInitialized();
+    return await this.readWrapper!.getQueuedDepositsCount(isDirectional);
   }
   
   /**
-   * Get strike prices for directional vault
+   * Get strike prices for directional vault (Uses Read RPC)
    */
   async getDirectionalStrikes(isCall: boolean): Promise<bigint[]> {
-    this.ensureInitialized();
-    return await this.wrapper!.getDirectionalStrikes(isCall);
+    this.ensureReadInitialized();
+    return await this.readWrapper!.getDirectionalStrikes(isCall);
   }
   
   /**
-   * Get strike prices for condor vault
+   * Get strike prices for condor vault (Uses Read RPC)
    */
   async getCondorStrikes(): Promise<bigint[]> {
-    this.ensureInitialized();
-    return await this.wrapper!.getCondorStrikes();
+    this.ensureReadInitialized();
+    return await this.readWrapper!.getCondorStrikes();
   }
   
   /**
-   * Get current price from vault's oracle
+   * Get current price from vault's oracle (Uses Read RPC)
    */
   async getCurrentPrice(isCall: boolean): Promise<bigint> {
-    this.ensureInitialized();
-    return await this.wrapper!.getCurrentPrice(isCall);
+    this.ensureReadInitialized();
+    return await this.readWrapper!.getCurrentPrice(isCall);
   }
   
   /**
-   * Calculate number of contracts for a directional deposit
+   * Calculate number of contracts for a directional deposit (Uses Read RPC)
    */
   async calculateDirectionalContracts(amount: string, isCall: boolean): Promise<{
     contracts: bigint;
     strikes: bigint[];
   }> {
-    this.ensureInitialized();
-    const [contracts, strikes] = await this.wrapper!.calculateDirectionalContracts(amount, isCall);
+    this.ensureReadInitialized();
+    const [contracts, strikes] = await this.readWrapper!.calculateDirectionalContracts(amount, isCall);
     return { contracts, strikes };
   }
   
   /**
-   * Calculate number of contracts for a condor deposit
+   * Calculate number of contracts for a condor deposit (Uses Read RPC)
    */
   async calculateCondorContracts(amount: string): Promise<{
     contracts: bigint;
     strikes: bigint[];
   }> {
-    this.ensureInitialized();
-    const [contracts, strikes] = await this.wrapper!.calculateCondorContracts(amount);
+    this.ensureReadInitialized();
+    const [contracts, strikes] = await this.readWrapper!.calculateCondorContracts(amount);
     return { contracts, strikes };
   }
   
   /**
-   * Get addresses for current chain
+   * Get addresses based on the connected chainId
    */
   private getAddresses() {
     if (!this.chainId) {
-      throw new Error("Chain ID not available");
+      // Attempt to get chain ID if not connected, fallback to default (Base Mainnet)
+      console.warn("Wallet not connected, using default addresses for Base Mainnet");
+      return this.getAddressesForChain(SUPPORTED_CHAINS.BASE_MAINNET);
     }
-    
-    switch (this.chainId) {
-      case SUPPORTED_CHAINS.BASE_MAINNET:
-        return CONTRACT_ADDRESSES.BASE;
-      default:
-        throw new Error(`Unsupported chain ID: ${this.chainId}`);
-    }
+    return this.getAddressesForChain(this.chainId);
   }
+  
+  /**
+   * Get addresses for a specific chain ID
+   */
+  private getAddressesForChain(chainId: number | null) {
+     const targetChainId = chainId ?? SUPPORTED_CHAINS.BASE_MAINNET; // Default to Base Mainnet if null
+     switch (targetChainId) {
+       case SUPPORTED_CHAINS.BASE_MAINNET:
+         return CONTRACT_ADDRESSES.BASE;
+       // Add other supported chains here if needed
+       // case SUPPORTED_CHAINS.BASE_SEPOLIA:
+       //   return CONTRACT_ADDRESSES.BASE_SEPOLIA;
+       default:
+         console.error(`Unsupported chain ID: ${targetChainId}, falling back to Base Mainnet`);
+         return CONTRACT_ADDRESSES.BASE; // Fallback
+     }
+   }
 }
 
 // No longer necessary since we're initializing directly in the hook
