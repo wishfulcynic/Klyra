@@ -72,11 +72,11 @@ The design mirrors the simplicity and transparency goals seen in related protoco
 
 These addresses are configured in `src/lib/contract.ts`:
 
--   **sUSDe Token:** `0x820C137fa70C8691f0e44Dc420a5e53c168921Dc`
+-   **sUSDS Token:** `0x5875eEE11Cf8398102FdAd704C9E96607675467a`
 -   **Call Vault:** `0x8E7A90F13e3720C5415E621e9Db68B79b1a0cc39`
 -   **Put Vault:** `0xA49b907734aF657c59Bdee11623eE45d3644399e`
 -   **Condor Vault:** `0x82eD817EDd587b466D7dFAb08A759B7870812fF7`
--   **StrategyVaultWrapper:** `0xa10d4b0e58FABe45F51cC0cbB43dF2C88F9c76bE`
+-   **StrategyVaultWrapper:** `0x018d72520F114CFe7528ea5876A42C8B2499127A`
 
 *(Note: OptionFactory and Option implementations are dependencies for the vaults but not directly interacted with by this frontend.)*
 
