@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light">
+    <ThemeProvider defaultTheme="light" forcedTheme="light">
       <main className="min-h-screen bg-gray-50">
         <VaultDashboard />
       </main>
