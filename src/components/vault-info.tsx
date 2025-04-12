@@ -114,7 +114,7 @@ export function VaultInfo({ vaultType }: VaultInfoProps) {
             ) : (
               <>
                 <p>
-                  The Rangebound Strategy Vault uses iron condor options strategies to profit from sideways or
+                  Mean Reverting Condor Vault uses iron condor options strategies to profit from sideways or
                   range-bound markets. This strategy is designed for users who expect limited price movement.
                 </p>
                 <p>
@@ -174,7 +174,7 @@ export function VaultInfo({ vaultType }: VaultInfoProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700">
                   <div className="text-xs text-zinc-400">Asset</div>
-                  <div className="font-mono text-white">sUSD</div>
+                  <div className="font-mono text-white">sUSDS</div>
                 </div>
                 <div className="bg-zinc-800/50 p-3 rounded-lg border border-zinc-700">
                   <div className="text-xs text-zinc-400">Cycle Duration</div>

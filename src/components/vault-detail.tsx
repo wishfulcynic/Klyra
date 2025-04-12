@@ -166,7 +166,7 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
               >
                 <div className="flex items-center gap-1">
                   <CreditCard className="h-3 w-3 mr-1" />
-                  sUSD
+                  sUSDS
                 </div>
               </Badge>
             </div>
@@ -357,6 +357,10 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
                       <div className="flex justify-between text-sm py-2 border-b border-gray-200">
                         <span className="text-gray-500">Lower Breakeven</span>
                         <span className="font-medium text-gray-900">${mainStrike.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm py-2 border-b border-gray-200">
+                        <span className="text-gray-500">Upper Breakeven</span>
+                        <span className="font-medium text-gray-900">${parseFloat(strikes[strikes.length - 1] || '0.00').toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm py-2">
                         <span className="text-gray-500">Current Price</span>
