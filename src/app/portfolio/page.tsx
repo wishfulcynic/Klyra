@@ -41,7 +41,7 @@ export default function PortfolioPage() {
 
   if (!address) {
     return (
-      <div className="container mx-auto px-4 py-16 max-w-7xl">
+      <div className="container mx-auto px-4 py-16">
         <div className="text-center max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">Your Portfolio</h1>
           <p className="text-zinc-400 mb-8">
@@ -59,7 +59,7 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Your Portfolio</h1>
         <p className="text-zinc-400">Manage your vault positions and track your performance</p>

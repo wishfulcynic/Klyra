@@ -58,7 +58,7 @@ export function Header() {
       <header
         className={`border-b border-gray-200 bg-white sticky top-0 z-50 transition-all duration-300 ${scrolled ? "shadow-sm" : ""}`}
       >
-        <div className="container flex h-16 items-center justify-between px-4 max-w-7xl mx-auto">
+        <div className="container flex h-16 items-center justify-between px-4 mx-auto">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2">
               <motion.div
