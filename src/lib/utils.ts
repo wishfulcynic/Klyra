@@ -28,11 +28,13 @@ export function formatDate(timestamp: number): string {
   }).format(date)
 }
 
-export function formatTimeLeft(timestamp: number): string {
-  const now = Date.now()
-  const diff = timestamp - now
+export function formatTimeLeft(timestamp: number | null): string {
+  if (timestamp === null) return "N/A";
+  
+  const now = Date.now();
+  const diff = (timestamp * 1000) - now;
 
-  if (diff <= 0) return "0d 0h 0m"
+  if (diff <= 0) return "0d 0h 0m";
 
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
