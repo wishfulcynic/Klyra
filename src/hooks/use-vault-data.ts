@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useWallet } from "@/hooks/use-wallet"
 import { StrategyVaultWrapper } from '@/lib/contract'
 import { ethers } from "ethers"
+import { VaultType } from "@/lib/types"
 
 export type PerformanceMetrics = {
   apy: string;
@@ -136,12 +137,37 @@ export function useVaultData() {
                 }
              }
              
-             // TODO: Fetch user shares (call, put, condor)
-             if (mounted) {
-                 setCallVaultShares('0'); 
-                 setPutVaultShares('0');
-                 setCondorVaultShares('0');
-             } 
+             // Fetch user shares for each vault
+             try {
+               const callShares = await Promise.race([wrapper.getVaultShares(VaultType.DIRECTIONAL, true, address), timeout]);
+               if (mounted && typeof callShares === 'bigint') {
+                   setCallVaultShares(ethers.formatUnits(callShares, 18)); // Vault shares likely 18 decimals
+               }
+             } catch(err) {
+                 console.error("Error fetching call vault shares:", err);
+                 if (mounted) setCallVaultShares('0');
+             }
+             
+             try {
+               const putShares = await Promise.race([wrapper.getVaultShares(VaultType.DIRECTIONAL, false, address), timeout]);
+               if (mounted && typeof putShares === 'bigint') {
+                   setPutVaultShares(ethers.formatUnits(putShares, 18)); 
+               }
+             } catch(err) {
+                 console.error("Error fetching put vault shares:", err);
+                 if (mounted) setPutVaultShares('0');
+             }
+             
+             try {
+               const condorShares = await Promise.race([wrapper.getVaultShares(VaultType.RANGEBOUND, null, address), timeout]);
+               if (mounted && typeof condorShares === 'bigint') {
+                   setCondorVaultShares(ethers.formatUnits(condorShares, 18));
+               }
+             } catch(err) {
+                 console.error("Error fetching condor vault shares:", err);
+                 if (mounted) setCondorVaultShares('0');
+             }
+              
         } else {
             // Reset user-specific data if not connected
             if (mounted) {
@@ -255,8 +281,10 @@ export function useVaultData() {
     // Add promise to fetch vault cycles (expiry)
     if (isDirectional && wrapper.readWrapper) {                           // Index 6
        promises.push(wrapper.readWrapper.vaultCycles(isCall));
+    } else if (!isDirectional && wrapper.readWrapper) { // Fetch Condor expiry
+       promises.push(wrapper.readWrapper.condorNextExpiryTimestamp()); 
     } else {
-       promises.push(Promise.resolve(null)); // Placeholder for condor expiry
+       promises.push(Promise.resolve(null)); // Placeholder if not directional and no readWrapper?
     }
 
     // --- Execute all promises --- 
@@ -287,14 +315,23 @@ export function useVaultData() {
     const currentPrice = getValue(currentPriceResult, 'currentPrice') as bigint | null;
     const queuedDepositsCount = (getValue(queuedDepositsResult, 'queuedDepositsCount') ?? BigInt(0)) as bigint;
     fetchedTotalCapacity = getValue(capacityResult, 'totalCapacity') as bigint | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any 
-    const cycleInfo = getValue(cycleInfoResult, 'vaultCycles') as any[] | null;
+    const rawCycleData = getValue(cycleInfoResult, 'cycleData'); // Get raw result
     
-    // Process cycleInfo for expiry
-    if (cycleInfo && cycleInfo.length >= 4) {
-       expiryTimestamp = BigInt(cycleInfo[3]); 
-    } else if(cycleInfoResult.status === 'rejected') {
-        expiryTimestamp = null; // Keep null if promise rejected
+    // Process cycleData for expiry based on vault type
+    if (isDirectional) {
+        const cycleInfo = rawCycleData as any[] | null; // Cast as array for directional
+        if (cycleInfo && cycleInfo.length >= 4) {
+            expiryTimestamp = BigInt(cycleInfo[3]); 
+        }
+    } else { // Condor vault
+        const condorExpiry = rawCycleData as bigint | null; // Cast as bigint for condor
+        if (condorExpiry !== null) {
+            expiryTimestamp = condorExpiry;
+        }
+    }
+    // Handle overall rejection case
+    if (cycleInfoResult.status === 'rejected') {
+        expiryTimestamp = null; 
     }
 
     // TODO: Fetch vault-specific TVL and Remaining Capacity

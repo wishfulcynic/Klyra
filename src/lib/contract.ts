@@ -1,4 +1,5 @@
 import { ethers } from "ethers"
+import { VaultType } from "./types"
 
 // Your contract ABI - update with your actual ABI
 export const KLYRA_CONTRACT_ABI = [
@@ -29,7 +30,7 @@ export const KLYRA_CONTRACT_ABI = [
 export const CONTRACT_ADDRESSES = {
   // Base network addresses
   BASE: {
-    WRAPPER: "0xa10d4b0e58FABe45F51cC0cbB43dF2C88F9c76bE", // Updated
+    WRAPPER: "0x018d72520F114CFe7528ea5876A42C8B2499127A", // Updated with latest deployment
     SUSDS: "0x820C137fa70C8691f0e44Dc420a5e53c168921Dc", // sUSDS on Base - Updated
     CALL_VAULT: "0x8E7A90F13e3720C5415E621e9Db68B79b1a0cc39", // Updated
     PUT_VAULT: "0xA49b907734aF657c59Bdee11623eE45d3644399e", // Updated
@@ -168,7 +169,10 @@ const STRATEGY_VAULT_WRAPPER_ABI = [
   "event ProfitsClaimed(address indexed user, uint256 claimedAmount, bool isDirectional, bool isCall)",
   
   // Added vaultCycles getter signature
-  "function vaultCycles(bool) external view returns (uint256 startTime, uint256 endTime, bool active, uint256 nextExpiryTimestamp)"
+  "function vaultCycles(bool) external view returns (uint256 startTime, uint256 endTime, bool active, uint256 nextExpiryTimestamp)",
+  
+  // Added Condor expiry getter
+  "function condorNextExpiryTimestamp() external view returns (uint256)"
 ];
 
 const ERC20_ABI = [
@@ -242,11 +246,23 @@ const readProvider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_BASE_RPC
  * Wrapper class for interacting with the Strategy Vault Wrapper contract
  */
 export class StrategyVaultWrapper {
+  // Wrapper Contracts
   wrapper: ethers.Contract | null = null;
+  readWrapper: ethers.Contract | null = null; 
+  
+  // Token Contracts
   susdsToken: ethers.Contract | null = null;
+  readSusdsToken: ethers.Contract | null = null; 
+
+  // Vault Contracts (Read/Write & Read-Only)
+  callVault: ethers.Contract | null = null;
+  putVault: ethers.Contract | null = null;
+  condorVault: ethers.Contract | null = null;
+  readCallVault: ethers.Contract | null = null;
+  readPutVault: ethers.Contract | null = null;
+  readCondorVault: ethers.Contract | null = null;
+
   private provider: ethers.BrowserProvider | null = null;
-  readWrapper: ethers.Contract | null = null; // Read-only instance - Changed to public
-  readSusdsToken: ethers.Contract | null = null; // Read-only instance - Changed to public
   private chainId: number | null = null;
   
   /**
@@ -255,7 +271,8 @@ export class StrategyVaultWrapper {
   async init(userAddress?: string): Promise<void> {
     try {
       // Always initialize read-only contracts using the RPC URL
-      const addresses = this.getAddressesForChain(SUPPORTED_CHAINS.BASE_MAINNET); // Assuming Base Mainnet for now
+      const addresses = this.getAddressesForChain(SUPPORTED_CHAINS.BASE_MAINNET); // Assuming Base Mainnet for reads
+      
       this.readWrapper = new ethers.Contract(
         addresses.WRAPPER,
         STRATEGY_VAULT_WRAPPER_ABI,
@@ -266,6 +283,10 @@ export class StrategyVaultWrapper {
         ERC20_ABI,
         readProvider
       );
+      // Init read-only vault instances
+      this.readCallVault = new ethers.Contract(addresses.CALL_VAULT, ERC20_ABI, readProvider);
+      this.readPutVault = new ethers.Contract(addresses.PUT_VAULT, ERC20_ABI, readProvider);
+      this.readCondorVault = new ethers.Contract(addresses.CONDOR_VAULT, ERC20_ABI, readProvider);
 
       // Initialize write contracts only if wallet is connected
       if (window.ethereum && userAddress) {
@@ -275,7 +296,6 @@ export class StrategyVaultWrapper {
         const signerAddress = await signer.getAddress();
         if (signerAddress.toLowerCase() !== userAddress.toLowerCase()) {
           console.warn("Signer address doesn't match connected wallet, write operations might fail.");
-          // Don't throw, allow read operations
         }
 
         const network = await this.provider.getNetwork();
@@ -284,23 +304,31 @@ export class StrategyVaultWrapper {
         // Use the correct addresses based on connected chain
         const connectedAddresses = this.getAddressesForChain(this.chainId);
 
+        // Init write wrapper & token instances
         this.wrapper = new ethers.Contract(
           connectedAddresses.WRAPPER,
           STRATEGY_VAULT_WRAPPER_ABI,
           signer
         );
-
         this.susdsToken = new ethers.Contract(
           connectedAddresses.SUSDS,
           ERC20_ABI,
           signer
         );
+        // Init write vault instances
+        this.callVault = new ethers.Contract(connectedAddresses.CALL_VAULT, ERC20_ABI, signer);
+        this.putVault = new ethers.Contract(connectedAddresses.PUT_VAULT, ERC20_ABI, signer);
+        this.condorVault = new ethers.Contract(connectedAddresses.CONDOR_VAULT, ERC20_ABI, signer);
+
       } else {
         // Not connected, clear write instances
         this.provider = null;
         this.wrapper = null;
         this.susdsToken = null;
-        this.chainId = null; // Or set to default if preferred
+        this.callVault = null;
+        this.putVault = null;
+        this.condorVault = null;
+        this.chainId = null; 
         console.log("Wallet not connected, initializing read-only contracts only.")
       }
     } catch (error) {
@@ -311,6 +339,12 @@ export class StrategyVaultWrapper {
       this.susdsToken = null;
       this.readWrapper = null;
       this.readSusdsToken = null;
+      this.callVault = null;
+      this.putVault = null;
+      this.condorVault = null;
+      this.readCallVault = null;
+      this.readPutVault = null;
+      this.readCondorVault = null;
       this.chainId = null;
       throw error;
     }
@@ -320,7 +354,8 @@ export class StrategyVaultWrapper {
    * Check if write contracts are initialized (wallet connected)
    */
   private ensureWriteInitialized(): void {
-    if (!this.wrapper || !this.susdsToken || !this.provider) {
+    // Check all write instances
+    if (!this.wrapper || !this.susdsToken || !this.provider || !this.callVault || !this.putVault || !this.condorVault) {
       throw new Error("Wallet not connected or contracts not initialized for writing. Call init() with address.");
     }
   }
@@ -329,8 +364,8 @@ export class StrategyVaultWrapper {
    * Check if read contracts are initialized
    */
   private ensureReadInitialized(): void {
-    if (!this.readWrapper || !this.readSusdsToken) {
-      // This should ideally not happen if init() is called, but good safeguard
+     // Check all read instances
+    if (!this.readWrapper || !this.readSusdsToken || !this.readCallVault || !this.readPutVault || !this.readCondorVault) {
       throw new Error("Read contracts not initialized. Ensure init() has been called.");
     }
   }
@@ -530,6 +565,24 @@ export class StrategyVaultWrapper {
          console.error(`Unsupported chain ID: ${targetChainId}, falling back to Base Mainnet`);
          return CONTRACT_ADDRESSES.BASE; // Fallback
      }
+   }
+
+  /**
+   * Get user vault share balance (Uses Read RPC)
+   */
+   async getVaultShares(vaultType: VaultType, isCall: boolean | null, userAddress: string): Promise<bigint> {
+     this.ensureReadInitialized();
+     if (vaultType === VaultType.DIRECTIONAL) {
+        if (isCall === true && this.readCallVault) { 
+           return await this.readCallVault.balanceOf(userAddress);
+        } else if (isCall === false && this.readPutVault) {
+           return await this.readPutVault.balanceOf(userAddress);
+        }
+     } else if (vaultType === VaultType.RANGEBOUND && this.readCondorVault) {
+        return await this.readCondorVault.balanceOf(userAddress);
+     }
+     console.warn(`Could not get shares for vaultType: ${vaultType}, isCall: ${isCall}`);
+     return BigInt(0); // Return 0 if vault instance not found
    }
 }
 
