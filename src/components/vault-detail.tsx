@@ -34,7 +34,7 @@ interface VaultDetailProps {
 }
 
 export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
-  const { callVaultData, condorVaultData } = useVaultData()
+  const { callVaultData, condorVaultData, totalValueLocked } = useVaultData()
   
   // Add debugging to see what data we actually have
   console.log("VaultDetail data:", { callVaultData, condorVaultData });
@@ -73,10 +73,18 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
   const vaultColor = vaultType === VaultType.DIRECTIONAL ? "indigo" : "purple"
   const gradientColors = vaultType === VaultType.DIRECTIONAL ? "from-indigo-50 to-white" : "from-purple-50 to-white"
 
-  // Calculate capacity percentage
-  const maxCapacity = 5000000 // Example max capacity of 5M
-  const tvl = parseFloat(vaultData?.totalValueLocked || '0')
-  const capacityPercentage = Math.min(100, (tvl / maxCapacity) * 100)
+  // Use overall TVL from hook
+  const displayTVL = totalValueLocked ? formatCurrency(Number(totalValueLocked)) : "$0.00";
+
+  // Use fetched capacity for the specific vault
+  const displayTotalCapacity = vaultData?.totalCapacity 
+     ? formatCurrency(Number(vaultData.totalCapacity))
+     : "N/A"; // Default if capacity not fetched
+  
+  // Calculate percentage based on fetched values if available
+  const capacityUsed = totalValueLocked ? Number(totalValueLocked) : 0;
+  const capacityTotal = vaultData?.totalCapacity ? Number(vaultData.totalCapacity) : 0;
+  const capacityPercentage = capacityTotal > 0 ? Math.min(100, (capacityUsed / capacityTotal) * 100) : 0;
 
   // Define default values outside conditionals
   let sharePrice = 1.0456;
@@ -178,7 +186,7 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           <div>
             <div className="text-sm text-gray-500 mb-1 font-medium">Total Value Locked</div>
-            <div className="text-xl font-semibold text-gray-900">{formatCurrency(tvl)}</div>
+            <div className="text-xl font-semibold text-gray-900">{displayTVL}</div>
           </div>
 
           <div>
@@ -195,7 +203,7 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
             <div className="flex items-center justify-between text-sm text-gray-500 mb-1 font-medium">
               <span>Capacity</span>
               <span className="text-xs">
-                {formatCurrency(tvl)} / {formatCurrency(maxCapacity)}
+                {displayTVL} / {displayTotalCapacity}
               </span>
             </div>
             <Progress

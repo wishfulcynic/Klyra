@@ -15,8 +15,9 @@ export type PerformanceMetrics = {
 export type VaultData = {
   // General data
   sharePrice: string | null; // Allow null for loading/error states
-  totalValueLocked: string | null;
-  remainingCapacity: string | null;
+  totalValueLocked: string | null; // Represents this specific vault's TVL (needs fetching)
+  remainingCapacity: string | null; // Represents this specific vault's remaining capacity (needs fetching)
+  totalCapacity: string | null; // Add total capacity for this specific vault
   isActiveDeposit: boolean | null;
   queuedDeposits: number | null;
   
@@ -228,61 +229,96 @@ export function useVaultData() {
     isCall: boolean
   ): Promise<VaultData> => {
     let expiryTimestamp: bigint | null = null;
+    let fetchedTotalCapacity: bigint | null = null; // Variable to hold fetched capacity
 
-    // Get metrics
-    const metrics = await wrapper.getPerformanceMetrics(isDirectional, isCall)
-    
-    // Get share price
-    const sharePrice = await wrapper.getSharePrice(isDirectional, isCall)
-    
-    // Get strikes
-    const strikes = isDirectional 
-      ? await wrapper.getDirectionalStrikes(isCall)
-      : await wrapper.getCondorStrikes()
-    
-    // Get current price
-    const currentPrice = await wrapper.getCurrentPrice(isCall) // Note: isCall might not be relevant for condor price
-    
-    // Check if active deposit queue (directional only for now)
-    const queuedDepositsCount = isDirectional ? await wrapper.getQueuedDepositsCount(isDirectional) : BigInt(0);
+    // Array to hold all promises
+    const promises = [];
 
-    // Fetch expiry timestamp for directional vaults
-    if (isDirectional && wrapper.readWrapper) {
-      try {
-        const cycleInfo = await wrapper.readWrapper.vaultCycles(isCall);
-        console.log(`Fetched vaultCycles for isCall=${isCall}:`, cycleInfo); // DEBUG LOG
-        // cycleInfo will be a struct-like array: [startTime, endTime, active, nextExpiryTimestamp]
-        if (cycleInfo && cycleInfo.length >= 4) {
-           expiryTimestamp = BigInt(cycleInfo[3]); // Index 3 is nextExpiryTimestamp
-        }
-      } catch (err) {
-         console.error(`Error fetching vaultCycles for isCall=${isCall}:`, err);
-         expiryTimestamp = null; // Set to null on error
+    // --- Create promises for each data point --- 
+    promises.push(wrapper.getPerformanceMetrics(isDirectional, isCall)); // Index 0
+    promises.push(wrapper.getSharePrice(isDirectional, isCall));        // Index 1
+    promises.push(isDirectional 
+      ? wrapper.getDirectionalStrikes(isCall) 
+      : wrapper.getCondorStrikes());                                  // Index 2
+    promises.push(wrapper.getCurrentPrice(isCall));                     // Index 3
+    promises.push(isDirectional 
+        ? wrapper.getQueuedDepositsCount(isDirectional) 
+        : Promise.resolve(BigInt(0)));                                 // Index 4
+    
+    // Add promise to fetch specific capacity
+    if (isDirectional) {                                                 // Index 5
+      promises.push(isCall ? wrapper.readWrapper!.callVaultCapacity() : wrapper.readWrapper!.putVaultCapacity());
+    } else {
+      promises.push(wrapper.readWrapper!.condorVaultCapacity());
+    }
+    
+    // Add promise to fetch vault cycles (expiry)
+    if (isDirectional && wrapper.readWrapper) {                           // Index 6
+       promises.push(wrapper.readWrapper.vaultCycles(isCall));
+    } else {
+       promises.push(Promise.resolve(null)); // Placeholder for condor expiry
+    }
+
+    // --- Execute all promises --- 
+    const results = await Promise.allSettled(promises);
+
+    // --- Process results --- 
+    const metricsResult = results[0];
+    const sharePriceResult = results[1];
+    const strikesResult = results[2];
+    const currentPriceResult = results[3];
+    const queuedDepositsResult = results[4];
+    const capacityResult = results[5];
+    const cycleInfoResult = results[6];
+
+    // Helper to extract value or throw/log error
+    const getValue = (result: PromiseSettledResult<unknown>, name: string): unknown | null => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        console.error(`Error fetching ${name}:`, result.reason);
+        return null;
       }
-    } // Condor expiry remains null for now
+    };
 
-    // TODO: Fetch real TVL/Capacity if available per vault
-    // const vaultSpecificTVL = ...
-    // const vaultRemainingCapacity = ...
+    const metrics = getValue(metricsResult, 'metrics') as PerformanceMetrics | null;
+    const sharePrice = getValue(sharePriceResult, 'sharePrice') as bigint | null;
+    const strikes = getValue(strikesResult, 'strikes') as bigint[] | null;
+    const currentPrice = getValue(currentPriceResult, 'currentPrice') as bigint | null;
+    const queuedDepositsCount = (getValue(queuedDepositsResult, 'queuedDepositsCount') ?? BigInt(0)) as bigint;
+    fetchedTotalCapacity = getValue(capacityResult, 'totalCapacity') as bigint | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any 
+    const cycleInfo = getValue(cycleInfoResult, 'vaultCycles') as any[] | null;
+    
+    // Process cycleInfo for expiry
+    if (cycleInfo && cycleInfo.length >= 4) {
+       expiryTimestamp = BigInt(cycleInfo[3]); 
+    } else if(cycleInfoResult.status === 'rejected') {
+        expiryTimestamp = null; // Keep null if promise rejected
+    }
+
+    // TODO: Fetch vault-specific TVL and Remaining Capacity
+    const vaultSpecificTVL = null; // Placeholder
+    const vaultRemainingCapacity = null; // Placeholder
     
     // Create vault data object
     const vaultData: VaultData = {
-      sharePrice: ethers.formatUnits(sharePrice, 18),
-      totalValueLocked: null, // Placeholder - Use overall TVL for now
-      remainingCapacity: null, // Placeholder - Needs specific logic
+      sharePrice: sharePrice ? ethers.formatUnits(sharePrice, 18) : null,
+      totalValueLocked: vaultSpecificTVL, 
+      remainingCapacity: vaultRemainingCapacity, 
+      totalCapacity: fetchedTotalCapacity ? ethers.formatUnits(fetchedTotalCapacity, 18) : null, // Store fetched capacity
       isActiveDeposit: queuedDepositsCount > BigInt(0),
       queuedDeposits: Number(queuedDepositsCount),
       
-      metrics: {
+      metrics: metrics ? {
         apy: (Number(metrics.apy) / 100).toFixed(2) + '%',
         successRate: Number(metrics.successRate) + '%',
         bestReturn: (Number(metrics.bestReturn) / 100).toFixed(2) + '%',
         avgYield: (Number(metrics.avgYield) / 100).toFixed(2) + '%/wk',
-      },
+      } : null,
       
-      strikes: strikes.map(s => ethers.formatUnits(s, 8)),
-      currentPrice: ethers.formatUnits(currentPrice, 8),
-      // Convert bigint timestamp to number (seconds since epoch), or keep null
+      strikes: strikes ? strikes.map((s: bigint) => ethers.formatUnits(s, 8)) : null,
+      currentPrice: currentPrice ? ethers.formatUnits(currentPrice, 8) : null,
       nextCycleExpiry: expiryTimestamp !== null ? Number(expiryTimestamp) : null,
     }
     
