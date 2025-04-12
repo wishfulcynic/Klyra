@@ -31,6 +31,9 @@ export type VaultData = {
   nextCycleExpiry: number | null; // Keep as number (seconds since epoch)
 };
 
+// Define the expected structure for the vaultCycles return value
+type VaultCycleInfo = [bigint, bigint, boolean, bigint]; // startTime, endTime, active, nextExpiryTimestamp
+
 export function useVaultData() {
   const { address, isConnected, /* chainId */ } = useWallet()
   const [isLoading, setIsLoading] = useState(true) // Start loading initially
@@ -319,9 +322,9 @@ export function useVaultData() {
     
     // Process cycleData for expiry based on vault type
     if (isDirectional) {
-        const cycleInfo = rawCycleData as any[] | null; // Cast as array for directional
+        const cycleInfo = rawCycleData as VaultCycleInfo | null; // Use specific type
         if (cycleInfo && cycleInfo.length >= 4) {
-            expiryTimestamp = BigInt(cycleInfo[3]); 
+            expiryTimestamp = cycleInfo[3]; // Access index 3 directly (bigint)
         }
     } else { // Condor vault
         const condorExpiry = rawCycleData as bigint | null; // Cast as bigint for condor
