@@ -11,14 +11,20 @@ interface ClaimFormProps {
 }
 
 export function ClaimForm({ vaultType }: ClaimFormProps) {
-  const { vaults, claimEarnings, isClaiming } = useVaultData()
+  const { 
+    claimProfits,
+    isLoading
+  } = useVaultData()
 
-  // Only directional vault has claimable earnings
   if (vaultType !== VaultType.DIRECTIONAL) return null
 
-  const { claimableEarnings } = vaults.directional
+  const displayClaimableEarnings = 0;
 
-  if (claimableEarnings <= 0) return null
+  const handleClaim = () => {
+    claimProfits(true, true).catch(err => console.error("Claim failed:", err));
+  }
+
+  if (displayClaimableEarnings <= 0) return null
 
   return (
     <div className="space-y-4">
@@ -27,16 +33,16 @@ export function ClaimForm({ vaultType }: ClaimFormProps) {
           <TrendingUp className="h-4 w-4 text-green-400" />
           Claimable Earnings
         </h3>
-        <span className="font-mono text-green-400">{formatCurrency(claimableEarnings)}</span>
+        <span className="font-mono text-green-400">{formatCurrency(displayClaimableEarnings)}</span>
       </div>
 
       <Button
         className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium"
-        onClick={() => claimEarnings()}
-        disabled={isClaiming}
+        onClick={handleClaim}
+        disabled={isLoading}
       >
-        {isClaiming ? (
-          "Claiming..."
+        {isLoading ? (
+          "Processing..."
         ) : (
           <span className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />

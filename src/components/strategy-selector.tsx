@@ -20,7 +20,17 @@ interface StrategySelectorProps {
 }
 
 export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
-  const { vaults } = useVaultData()
+  const { callVaultData, condorVaultData } = useVaultData()
+
+  const directionalAPY = callVaultData?.metrics?.apy ?? "0%";
+  const directionalTVL = callVaultData?.totalValueLocked 
+    ? formatCurrency(Number(callVaultData.totalValueLocked))
+    : formatCurrency(0);
+
+  const condorAPY = condorVaultData?.metrics?.apy ?? "0%";
+  const condorTVL = condorVaultData?.totalValueLocked 
+    ? formatCurrency(Number(condorVaultData.totalValueLocked))
+    : formatCurrency(0);
 
   return (
     <div className="py-8">
@@ -59,14 +69,14 @@ export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
                     <BarChart3 className="h-3 w-3" />
                     <span>Est. APY</span>
                   </div>
-                  <div className="text-lg font-semibold text-blue-400">{vaults.directional.apy}%</div>
+                  <div className="text-lg font-semibold text-blue-400">{directionalAPY}</div>
                 </div>
                 <div className="bg-blue-500/5 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <DollarSign className="h-3 w-3" />
                     <span>TVL</span>
                   </div>
-                  <div className="text-lg font-semibold">{formatCurrency(vaults.directional.tvl)}</div>
+                  <div className="text-lg font-semibold">{directionalTVL}</div>
                 </div>
               </div>
 
@@ -125,14 +135,14 @@ export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
                     <BarChart3 className="h-3 w-3" />
                     <span>Est. APY</span>
                   </div>
-                  <div className="text-lg font-semibold text-purple-400">{vaults.rangebound.apy}%</div>
+                  <div className="text-lg font-semibold text-purple-400">{condorAPY}</div>
                 </div>
                 <div className="bg-purple-500/5 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                     <DollarSign className="h-3 w-3" />
                     <span>TVL</span>
                   </div>
-                  <div className="text-lg font-semibold">{formatCurrency(vaults.rangebound.tvl)}</div>
+                  <div className="text-lg font-semibold">{condorTVL}</div>
                 </div>
               </div>
 
@@ -233,7 +243,7 @@ export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
                   </Badge>
                 </td>
                 <td className="py-3 px-4 text-zinc-300">Option Spreads Profit</td>
-                <td className="py-3 px-4 text-blue-400">{vaults.directional.apy}%</td>
+                <td className="py-3 px-4 text-blue-400">{directionalAPY}</td>
               </tr>
               <tr className="hover:bg-zinc-800/30 transition-colors">
                 <td className="py-3 px-4 flex items-center gap-2">
@@ -249,7 +259,7 @@ export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
                   </Badge>
                 </td>
                 <td className="py-3 px-4 text-zinc-300">Option Premium</td>
-                <td className="py-3 px-4 text-purple-400">{vaults.rangebound.apy}%</td>
+                <td className="py-3 px-4 text-purple-400">{condorAPY}</td>
               </tr>
             </tbody>
           </table>
