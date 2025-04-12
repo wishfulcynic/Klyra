@@ -21,7 +21,7 @@ interface ThemeProviderProps {
   forcedTheme?: string
 }
 
-function ThemeProvider({ children, attribute = "class", defaultTheme = "system", forcedTheme }: ThemeProviderProps) {
+function ThemeProvider({ children, attribute: _attribute = "class", defaultTheme = "system", forcedTheme }: ThemeProviderProps) {
   const [theme, setTheme] = React.useState<"dark" | "light">(() => {
     if (forcedTheme) return forcedTheme === "dark" ? "dark" : "light"; // Handle forcedTheme
     if (typeof window === "undefined") {
