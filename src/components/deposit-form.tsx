@@ -178,7 +178,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
         <div className="flex justify-between text-sm">
           <label htmlFor="deposit-amount" className="text-gray-500 flex items-center gap-1 font-medium">
             <CreditCard className="h-3 w-3" />
-            Amount (sUSD)
+            Amount (sUSDS)
           </label>
           <div className="text-gray-500 flex items-center gap-1">
             <Wallet className="h-3 w-3" />
@@ -278,7 +278,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
             "Approving..."
           ) : (
             <span className="flex items-center gap-2">
-              Approve sUSD <ArrowRight className="h-4 w-4" />
+              Approve sUSDS <ArrowRight className="h-4 w-4" />
             </span>
           )}
         </Button>

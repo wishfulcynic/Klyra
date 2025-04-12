@@ -7,6 +7,7 @@ import { TrendingUp, ArrowUpDown, Clock } from "lucide-react"
 import { VaultType } from "@/lib/types"
 import { useVaultData } from "@/hooks/use-vault-data"
 import { motion } from "framer-motion"
+import { formatTimeLeft } from "@/lib/utils"
 
 interface VaultListProps {
   onSelectVault: (vaultType: VaultType) => void
@@ -104,7 +105,7 @@ export function VaultList({ onSelectVault }: VaultListProps) {
               <div className="flex items-center gap-2 mb-6 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
                 <Clock className="h-4 w-4 text-indigo-500" />
                 <span>
-                  Next Cycle: <span className="font-medium">7d 0h</span>
+                  Next Cycle: <span className="font-medium">{callVaultData?.nextCycleExpiry ? formatTimeLeft(callVaultData.nextCycleExpiry) : 'N/A'}</span>
                 </span>
               </div>
 
@@ -202,7 +203,7 @@ export function VaultList({ onSelectVault }: VaultListProps) {
               <div className="flex items-center gap-2 mb-6 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
                 <Clock className="h-4 w-4 text-purple-500" />
                 <span>
-                  Next Cycle: <span className="font-medium">7d 0h</span>
+                  Next Cycle: <span className="font-medium">{condorVaultData?.nextCycleExpiry ? formatTimeLeft(condorVaultData.nextCycleExpiry) : 'N/A'}</span>
                 </span>
               </div>
 

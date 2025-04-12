@@ -29,7 +29,7 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
   } = useVaultData()
   
   const [amount, setAmount] = useState("")
-  const [withdrawType, setWithdrawType] = useState<"shares" | "susd">("susd")
+  const [withdrawType, setWithdrawType] = useState<"shares" | "sUSDS">("sUSDS")
   const [directionalStrategy, setDirectionalStrategy] = useState<"bullish" | "bearish">("bullish")
 
   const vault = vaultType === VaultType.DIRECTIONAL
@@ -61,7 +61,7 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
 
     const sharePrice = Number.parseFloat(vault.sharePrice || '1')
     let sharesToWithdraw = amountValue
-    if (withdrawType === "susd") {
+    if (withdrawType === "sUSDS") {
       sharesToWithdraw = amountValue / sharePrice
     }
 
@@ -141,15 +141,15 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
         </div>
       </div>
 
-      <Tabs value={withdrawType} onValueChange={(v) => setWithdrawType(v as "shares" | "susd")} className="w-full">
+      <Tabs value={withdrawType} onValueChange={(v) => setWithdrawType(v as "shares" | "sUSDS")} className="w-full">
         <TabsList className={`grid grid-cols-2 mb-6 bg-gray-100 p-1 rounded-md`}>
           <TabsTrigger
-            value="susd"
+            value="sUSDS"
             className={`rounded-md data-[state=inactive]:text-gray-700 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all duration-200`}
           >
             <div className="flex items-center gap-1 text-sm">
               <CreditCard className="h-3 w-3" />
-              Withdraw in sUSD
+              Withdraw in sUSDS
             </div>
           </TabsTrigger>
           <TabsTrigger
@@ -163,17 +163,17 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="susd" className="space-y-2 mt-0">
+        <TabsContent value="sUSDS" className="space-y-2 mt-0">
           <div className="flex justify-between text-sm mb-2">
-            <label htmlFor="withdraw-amount-susd" className="text-gray-500 flex items-center gap-1">
+            <label htmlFor="withdraw-amount-susds" className="text-gray-500 flex items-center gap-1">
               <CreditCard className="h-3 w-3" />
-              Amount (sUSD)
+              Amount (sUSDS)
             </label>
           </div>
 
           <div className="relative flex-1">
             <Input
-              id="withdraw-amount-susd"
+              id="withdraw-amount-susds"
               type="text"
               placeholder="0.00"
               value={amount}
@@ -241,7 +241,7 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
 
           {amount && !isNaN(Number.parseFloat(amount)) && !insufficientShares && (
             <div className="text-xs text-gray-500">
-              ≈ <span className="text-gray-900 font-medium">{formatCurrency(estimatedValue)}</span> sUSD
+              ≈ <span className="text-gray-900 font-medium">{formatCurrency(estimatedValue)}</span> sUSDS
             </div>
           )}
         </TabsContent>
@@ -259,7 +259,7 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 text-gray-500 shrink-0 mt-0.5" />
           <div className="space-y-2 text-sm text-gray-600">
-            <p>• Withdrawing will burn your vault shares and return the corresponding amount of sUSD.</p>
+            <p>• Withdrawing will burn your vault shares and return the corresponding amount of sUSDS.</p>
             {vault.isActiveDeposit && (
               <p className="text-yellow-600">• Withdrawals are temporarily locked during the active options auction.</p>
             )}
