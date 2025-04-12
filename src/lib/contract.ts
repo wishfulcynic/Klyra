@@ -190,8 +190,11 @@ declare global {
     ethereum?: {
       isMetaMask?: boolean;
       selectedAddress?: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       request: (request: { method: string; params?: any[] }) => Promise<any>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       on: (event: string, handler: (...args: any[]) => void) => void;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       removeListener: (event: string, handler: (...args: any[]) => void) => void;
     };
   }

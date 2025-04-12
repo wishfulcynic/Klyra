@@ -6,26 +6,31 @@ import { VaultType } from "@/lib/types"
 import { useVaultData } from "@/hooks/use-vault-data"
 import { formatCurrency } from "@/lib/utils"
 import { FileText, AlertTriangle, HelpCircle } from "lucide-react"
+// import { VaultStats } from "./vault-stats" // Unused
+// import { DepositForm } from "./deposit-form" // Unused
+// import { WithdrawForm } from "./withdraw-form" // Unused
 
 interface VaultInfoProps {
   vaultType: VaultType
 }
 
 export function VaultInfo({ vaultType }: VaultInfoProps) {
-  const { callVaultData, putVaultData, condorVaultData } = useVaultData()
+  const { callVaultData, /* putVaultData, */ condorVaultData } = useVaultData()
   
   // Get the appropriate vault data
-  const vaultData = vaultType === VaultType.DIRECTIONAL 
-    ? callVaultData 
-    : condorVaultData
+  const _data = vaultType === VaultType.DIRECTIONAL ? callVaultData : condorVaultData
 
   // Define default values to prevent undefined errors
-  const currentPrice = parseFloat(vaultData?.currentPrice || '2100.00');
-  const strikes = vaultData?.strikes || ['1800.00', '2000.00', '2200.00', '2400.00'];
+  const currentPrice = parseFloat(_data?.currentPrice || '2100.00');
+  const strikes = _data?.strikes || ['1800.00', '2000.00', '2200.00', '2400.00'];
   const lowerStrike = parseFloat(strikes[0] || '1800.00');
   const upperStrike = parseFloat(strikes[strikes.length - 1] || '2400.00');
   // Default to "bullish" for directional strategy
   const currentDirection = "bullish";
+
+  // Simplified example using hardcoded or props data - Removed unused vars
+  // const /* avgYield */ _avgYield = "1.5% / wk"; 
+  // const successRate = "85%"; 
 
   return (
     <Card className="bg-zinc-900 border-zinc-800">

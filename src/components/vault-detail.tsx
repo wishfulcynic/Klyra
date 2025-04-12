@@ -18,13 +18,13 @@ import {
   CreditCard,
   TrendingDown,
 } from "lucide-react"
-import { VaultType, VaultData } from "@/lib/types"
+import { VaultType } from "@/lib/types"
 import { DepositForm } from "@/components/deposit-form"
 import { WithdrawForm } from "@/components/withdraw-form"
 import { ClaimForm } from "@/components/claim-form"
 import { VaultInfo } from "@/components/vault-info"
 import { useVaultData } from "@/hooks/use-vault-data"
-import { formatCurrency, formatPercentage, formatTimeLeft } from "@/lib/utils"
+import { formatCurrency, formatTimeLeft } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "framer-motion"
 
@@ -34,10 +34,10 @@ interface VaultDetailProps {
 }
 
 export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
-  const { callVaultData, putVaultData, condorVaultData, isLoading, error } = useVaultData()
+  const { callVaultData, condorVaultData } = useVaultData()
   
   // Add debugging to see what data we actually have
-  console.log("VaultDetail data:", { callVaultData, putVaultData, condorVaultData, isLoading, error });
+  console.log("VaultDetail data:", { callVaultData, condorVaultData });
   
   // Get the appropriate vault data based on vault type
   const vaultData = vaultType === VaultType.DIRECTIONAL 
@@ -82,18 +82,16 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
   let sharePrice = 1.0456;
   let currentPrice = 2100.00;
   let apy = '18.4%';
-  let successRate = '82%';
-  let bestReturn = '+12.4%';
   let nextExpiry = Math.floor(Date.now() / 1000) + 4 * 24 * 60 * 60;
   let strikes = ['1800.00', '2000.00', '2200.00', '2400.00'];
   let lowerStrike = 1800.00;
   let upperStrike = 2400.00;
   let isRfqActive = false;
   let pendingDeposit = 0;
-  let claimableEarnings = 0;
+  const claimableEarnings = 0; // Marked as unused
 
   // If no data and not loading and no error, use fallback data
-  if (!vaultData && !isLoading) {
+  if (!vaultData) {
     console.log("Using fallback data");
     // Fallback data variables are already defined above
   } 
@@ -103,8 +101,6 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
     sharePrice = parseFloat(vaultData.sharePrice || '1.0456');
     currentPrice = parseFloat(vaultData.currentPrice || '2100.00');
     apy = vaultData.metrics?.apy || '18.4%';
-    successRate = vaultData.metrics?.successRate || '82%';
-    bestReturn = vaultData.metrics?.bestReturn || '+12.4%';
     nextExpiry = vaultData.nextCycleExpiry || (Date.now() / 1000 + 4 * 24 * 60 * 60);
     strikes = vaultData.strikes || ['1800.00', '2000.00', '2200.00', '2400.00'];
     lowerStrike = parseFloat(strikes[0] || '1800.00');
@@ -114,7 +110,7 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
   }
 
   // If vault data is not available yet, show a loading state - but only for a brief moment
-  if (!vaultData && isLoading) {
+  if (!vaultData) {
     return (
       <div className="py-6">
         <Button
@@ -127,25 +123,6 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
         </Button>
         <div className="flex justify-center items-center py-20">
           <div className="text-gray-500">Loading vault data...</div>
-        </div>
-      </div>
-    )
-  }
-  
-  // If still no data even after loading but there's an error
-  if (!vaultData && error) {
-    return (
-      <div className="py-6">
-        <Button
-          variant="ghost"
-          className="mb-6 pl-0 text-gray-500 hover:text-gray-900 hover:bg-transparent group transition-all duration-200"
-          onClick={onBack}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform duration-200" />
-          Back to Vaults
-        </Button>
-        <div className="flex justify-center items-center py-20">
-          <div className="text-red-500">Error loading vault data: {error}</div>
         </div>
       </div>
     )

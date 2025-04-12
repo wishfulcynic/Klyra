@@ -30,7 +30,7 @@ export type VaultData = {
 };
 
 export function useVaultData() {
-  const { address, isConnected, chainId } = useWallet()
+  const { address, isConnected, /* chainId */ } = useWallet()
   const [isLoading, setIsLoading] = useState(true) // Start loading initially
   const [error, setError] = useState<string | null>(null)
   

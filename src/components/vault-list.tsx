@@ -9,11 +9,11 @@ import { useVaultData } from "@/hooks/use-vault-data"
 import { motion } from "framer-motion"
 
 interface VaultListProps {
-  onSelectVault: (vault: VaultType) => void
+  onSelectVault: (vaultType: VaultType) => void
 }
 
 export function VaultList({ onSelectVault }: VaultListProps) {
-  const { callVaultData, putVaultData, condorVaultData } = useVaultData()
+  const { callVaultData, /* putVaultData, */ condorVaultData } = useVaultData()
 
   return (
     <div className="py-8">

@@ -17,7 +17,6 @@ export function DepositForm({ vaultType }: DepositFormProps) {
   const { address } = useWallet()
   const { 
     userSusdsBalance,
-    needsApproval,
     depositDirectional,
     depositCondor,
     approveWrapper,
@@ -72,10 +71,11 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     const amountValue = Number.parseFloat(amount)
     if (isNaN(amountValue) || amountValue <= 0) return
 
-    const isCall = directionalStrategy === "bullish"
+    // Removed unused var
     
     if (vaultType === VaultType.DIRECTIONAL) {
-      await depositDirectional(amount, isCall)
+      // Determine isCall directly where needed
+      await depositDirectional(amount, directionalStrategy === "bullish") 
     } else {
       await depositCondor(amount)
     }
