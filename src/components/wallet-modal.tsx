@@ -20,10 +20,10 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
     connect(
       { connector },
       {
-        onSuccess: () => {
+    onSuccess: () => {
           setConnectingConnectorId(null);
           onClose();
-        },
+    },
         onError: (error) => {
           console.error("Connection Error:", error);
           setConnectingConnectorId(null);

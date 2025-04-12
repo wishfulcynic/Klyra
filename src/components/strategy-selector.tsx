@@ -35,14 +35,14 @@ export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
   return (
     <div className="py-8">
       <div className="mb-8 text-center">
-        <h2 className="text-3xl font-bold tracking-tight mb-2">Choose Your Strategy</h2>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold tracking-tight mb-2">Choose Your Strategy</h2>
+        <p className="text-muted-foreground max-w-3xl mx-auto">
           Select a strategy based on your market outlook. Deposit stablecoins and let the vault handle the options
           strategy for you.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+      <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
         {/* Directional Strategy Card */}
         <Card className="overflow-hidden border-2 hover:border-blue-500/50 transition-all bg-gradient-to-b from-zinc-900 to-zinc-950">
           <CardHeader className="pb-4">
@@ -176,7 +176,7 @@ export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
         </Card>
       </div>
 
-      <div className="mt-12 max-w-5xl mx-auto">
+      <div className="mt-12 max-w-6xl mx-auto">
         <div className="bg-muted/50 rounded-lg p-6">
           <h3 className="text-lg font-medium mb-4 flex items-center">
             <Users className="h-5 w-5 mr-2" />
@@ -215,7 +215,7 @@ export function StrategySelector({ onSelectVault }: StrategySelectorProps) {
       </div>
 
       {/* Strategy Comparison Table */}
-      <div className="mt-12 max-w-5xl mx-auto overflow-hidden">
+      <div className="mt-12 max-w-6xl mx-auto overflow-hidden">
         <h3 className="text-lg font-medium mb-4">Strategy Comparison</h3>
         <div className="overflow-x-auto">
           <table className="w-full">

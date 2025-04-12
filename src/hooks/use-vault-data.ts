@@ -250,6 +250,7 @@ export function useVaultData() {
     if (isDirectional && wrapper.readWrapper) {
       try {
         const cycleInfo = await wrapper.readWrapper.vaultCycles(isCall);
+        console.log(`Fetched vaultCycles for isCall=${isCall}:`, cycleInfo); // DEBUG LOG
         // cycleInfo will be a struct-like array: [startTime, endTime, active, nextExpiryTimestamp]
         if (cycleInfo && cycleInfo.length >= 4) {
            expiryTimestamp = BigInt(cycleInfo[3]); // Index 3 is nextExpiryTimestamp

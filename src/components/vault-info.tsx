@@ -305,12 +305,12 @@ export function VaultInfo({ vaultType }: VaultInfoProps) {
           <TabsContent value="faq" className="space-y-6">
             <div className="flex items-center gap-2 mb-2">
               <HelpCircle className="h-5 w-5 text-zinc-400" />
-              <h3 className="font-medium">Frequently Asked Questions</h3>
+              <h3 className="font-medium text-white">Frequently Asked Questions</h3>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <h4 className="font-medium">When can I deposit or withdraw?</h4>
+                <h4 className="font-medium text-white">When can I deposit or withdraw?</h4>
                 <p className="text-sm text-zinc-400">
                   You can deposit at any time, but deposits made during an active cycle will be queued for the next
                   cycle. Withdrawals are generally available at any time, except during active option auctions.
@@ -318,7 +318,7 @@ export function VaultInfo({ vaultType }: VaultInfoProps) {
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium">How are returns generated?</h4>
+                <h4 className="font-medium text-white">How are returns generated?</h4>
                 <p className="text-sm text-zinc-400">
                   {vaultType === VaultType.DIRECTIONAL
                     ? "Returns are generated from profits on option spread positions when the market moves in the anticipated direction."
@@ -327,7 +327,7 @@ export function VaultInfo({ vaultType }: VaultInfoProps) {
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium">What happens at the end of each cycle?</h4>
+                <h4 className="font-medium text-white">What happens at the end of each cycle?</h4>
                 <p className="text-sm text-zinc-400">
                   At the end of each weekly cycle, options positions are settled, and new positions are created for the
                   next cycle.
@@ -338,7 +338,7 @@ export function VaultInfo({ vaultType }: VaultInfoProps) {
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium">Are there any fees?</h4>
+                <h4 className="font-medium text-white">Are there any fees?</h4>
                 <p className="text-sm text-zinc-400">
                   Yes, the vault charges a 2% management fee on deposits and a 10% performance fee on profits. These
                   fees are used to maintain the protocol and reward the developers.
