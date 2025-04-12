@@ -251,16 +251,8 @@ export function DepositForm({ vaultType }: DepositFormProps) {
           <div className="text-xs text-gray-500 mt-2">
             <p>
               You will receive approximately{" "}
-              <span className="text-gray-900 font-medium">{estimatedShares.toFixed(6)}</span> vault shares
+              <span className="text-gray-900 font-medium">{estimatedShares.toFixed(8)}</span> vault shares
             </p>
-            {contractInfo.numContracts > 0 && (
-              <p className="mt-1">
-                Creating <span className="text-gray-900 font-medium">{contractInfo.numContracts}</span> option contracts
-                {contractInfo.strikes.length > 0 && (
-                  <span> with strikes at {contractInfo.strikes.map((s) => `$${s.toFixed(2)}`).join(", ")}</span>
-                )}
-              </p>
-            )}
             {calculationError && (
               <p className="mt-1 text-xs text-red-500">{calculationError}</p>
             )}
