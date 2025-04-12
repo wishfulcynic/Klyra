@@ -83,9 +83,8 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
   let currentPrice = 2100.00;
   let apy = '18.4%';
   let nextExpiry = Math.floor(Date.now() / 1000) + 4 * 24 * 60 * 60;
-  let strikes = ['1800.00', '2000.00', '2200.00', '2400.00'];
-  let lowerStrike = 1800.00;
-  let upperStrike = 2400.00;
+  let strikes = ['1800.00']; // Expecting potentially only one strike
+  let mainStrike = 0.00; // Define mainStrike outside the if block
   let isRfqActive = false;
   let pendingDeposit = 0;
   const claimableEarnings = 0; // Marked as unused
@@ -102,9 +101,9 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
     currentPrice = parseFloat(vaultData.currentPrice || '2100.00');
     apy = vaultData.metrics?.apy || '18.4%';
     nextExpiry = vaultData.nextCycleExpiry || (Date.now() / 1000 + 4 * 24 * 60 * 60);
-    strikes = vaultData.strikes || ['1800.00', '2000.00', '2200.00', '2400.00'];
-    lowerStrike = parseFloat(strikes[0] || '1800.00');
-    upperStrike = parseFloat(strikes[strikes.length - 1] || '2400.00');
+    strikes = vaultData.strikes || ['1800.00']; 
+    console.log("Fetched Strikes:", strikes); // DEBUG LOG for strikes array
+    mainStrike = parseFloat(strikes[0] || '0.00'); // Assign value inside if block
     isRfqActive = vaultData.isActiveDeposit || false;
     pendingDeposit = (vaultData.queuedDeposits || 0) > 0 ? 1000 : 0;
   }
@@ -315,17 +314,13 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
                           {directionalStrategy === "bullish" ? "Bullish" : "Bearish"}
                         </Badge>
                         <span className="text-gray-700">
-                          {directionalStrategy === "bullish" ? "Call Spread" : "Put Spread"}
+                          {directionalStrategy === "bullish" ? "Call Option" : "Put Option"}
                         </span>
                       </div>
 
                       <div className="flex justify-between text-sm py-2 border-b border-gray-200">
-                        <span className="text-gray-500">Lower Strike</span>
-                        <span className="font-medium text-gray-900">${lowerStrike.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm py-2 border-b border-gray-200">
-                        <span className="text-gray-500">Upper Strike</span>
-                        <span className="font-medium text-gray-900">${upperStrike.toFixed(2)}</span>
+                        <span className="text-gray-500">Strike Price</span>
+                        <span className="font-medium text-gray-900">${mainStrike.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm py-2">
                         <span className="text-gray-500">Current Price</span>
@@ -334,19 +329,15 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
 
                       <div className="mt-2 relative h-8 bg-gray-100 rounded-md overflow-hidden">
                         <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">
-                          Price Range
+                          Price vs Strike
                         </div>
                         <div
-                          className="absolute top-0 bottom-0 bg-indigo-200"
-                          style={{
-                            left: `${Math.max(0, ((lowerStrike - 0.8 * currentPrice) / (0.4 * currentPrice)) * 100)}%`,
-                            right: `${Math.max(0, 100 - ((upperStrike - 0.8 * currentPrice) / (0.4 * currentPrice)) * 100)}%`,
+                          className="absolute top-0 bottom-0 w-1 bg-indigo-600"
+                          style={{ 
+                            left: `${Math.min(99, Math.max(1, (currentPrice / mainStrike) * 50))}%`
                           }}
                         ></div>
-                        <div
-                          className="absolute top-0 bottom-0 w-1 bg-indigo-600"
-                          style={{ left: `50%` }}
-                        ></div>
+                        <div className="absolute top-0 bottom-0 left-1/2 border-l border-dashed border-gray-400"></div>
                       </div>
                     </div>
                   ) : (
@@ -357,11 +348,7 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
 
                       <div className="flex justify-between text-sm py-2 border-b border-gray-200">
                         <span className="text-gray-500">Lower Breakeven</span>
-                        <span className="font-medium text-gray-900">${lowerStrike.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm py-2 border-b border-gray-200">
-                        <span className="text-gray-500">Upper Breakeven</span>
-                        <span className="font-medium text-gray-900">${upperStrike.toFixed(2)}</span>
+                        <span className="font-medium text-gray-900">${mainStrike.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm py-2">
                         <span className="text-gray-500">Current Price</span>
@@ -375,8 +362,8 @@ export function VaultDetail({ vaultType, onBack }: VaultDetailProps) {
                         <div
                           className="absolute top-0 bottom-0 bg-purple-200"
                           style={{
-                            left: `${Math.max(0, ((lowerStrike - 0.8 * currentPrice) / (0.4 * currentPrice)) * 100)}%`,
-                            right: `${Math.max(0, 100 - ((upperStrike - 0.8 * currentPrice) / (0.4 * currentPrice)) * 100)}%`,
+                            left: `${Math.max(0, ((mainStrike - 0.8 * currentPrice) / (0.4 * currentPrice)) * 100)}%`,
+                            right: `${Math.max(0, 100 - ((mainStrike - 0.8 * currentPrice) / (0.4 * currentPrice)) * 100)}%`,
                           }}
                         ></div>
                         <div
