@@ -2,9 +2,9 @@
 
 ## Overview
 
-This repository contains the frontend web application for the Klyra Vaults, part of the Thesaurus Protocol. This interface provides a user-friendly way for users to discover, understand, and interact with sophisticated DeFi yield strategies, specifically:
+This repository contains the frontend web application for the Klyra, part of the Thetanuts Protocol. This interface provides a user-friendly way for users to discover, understand, and interact with Thetanuts Option Vaults, specifically:
 
-1.  **Directional Vaults**: Offering Call Spread (Bullish) and Put Spread (Bearish) strategies on underlying assets (initially ETH).
+1.  **Directional Vaults**: Offering Call Spread (Bullish) and Put Spread (Bearish) strategies on underlying assets.
 2.  **Condor Vaults**: Implementing market-neutral Iron Condor strategies.
 
 Built using Next.js, React, TypeScript, and Ethers.js, the frontend connects to the deployed `StrategyVaultWrapper` smart contract, abstracting away the complexities of direct contract interaction and presenting vault performance and deposit actions in a clear, accessible manner.
@@ -30,13 +30,13 @@ The design philosophy mirrors the simplicity and transparency goals seen in rela
 -   **Strategy Selection**: Easily choose between Bullish (Call) and Bearish (Put) stances within the Directional vault.
 -   **Deposit Interface**:
     -   Connect Web3 wallet (e.g., MetaMask).
-    -   Input deposit amount in sUSD.
-    -   View available sUSD balance.
+    -   Input deposit amount in sUSDS.
+    -   View available sUSDS balance.
     -   Use percentage buttons (25%, 50%, 75%, MAX) for convenience.
     -   See estimated vault shares to be received.
     -   (Potentially) View estimated option contract details based on deposit amount.
 -   **Transaction Handling**:
-    -   Handles ERC20 approvals for sUSD spending by the wrapper contract.
+    -   Handles ERC20 approvals for sUSDS spending by the wrapper contract.
     -   Submits deposit transactions to the `StrategyVaultWrapper`.
 -   **Informational Displays**: Provides explanations of how each strategy works and associated risks.
 
@@ -47,9 +47,9 @@ The design philosophy mirrors the simplicity and transparency goals seen in rela
 1.  **Connect Wallet**: User connects their Web3 wallet to the application.
 2.  **Select Vault Strategy**: User navigates or selects the desired vault type (e.g., Directional - Bullish).
 3.  **Review Vault Info**: The interface displays performance metrics (APY, TVL), a description of the strategy, and associated risks.
-4.  **Enter Deposit Amount**: User enters the amount of sUSD they wish to deposit into the selected vault using the deposit form. Their sUSD balance is displayed.
+4.  **Enter Deposit Amount**: User enters the amount of sUSDS they wish to deposit into the selected vault using the deposit form. Their sUSDS balance is displayed.
 5.  **Review Estimates**: The UI shows the estimated vault shares the user will receive.
-6.  **Approve (if necessary)**: If the `StrategyVaultWrapper` contract doesn't have sufficient allowance, the user is prompted to approve the sUSD spending.
+6.  **Approve (if necessary)**: If the `StrategyVaultWrapper` contract doesn't have sufficient allowance, the user is prompted to approve the sUSDS spending.
 7.  **Deposit**: User confirms the deposit transaction in their wallet.
 8.  **Confirmation**: (Ideally) The UI provides feedback on the successful transaction and potentially updates to show the user's new position or balance.
 
@@ -64,7 +64,7 @@ The design philosophy mirrors the simplicity and transparency goals seen in rela
 -   **Styling**: Tailwind CSS
 -   **Web3 Interaction**: Ethers.js
 -   **State Management**: React Hooks (useState, useEffect, useContext)
--   **Contract Interaction**: Connects to deployed `StrategyVaultWrapper` and `sUSDe (ERC20)` contracts via their ABIs and addresses (defined in `src/lib/contract.ts`).
+-   **Contract Interaction**: Connects to deployed `StrategyVaultWrapper` and `sUSDS (ERC20)` contracts via their ABIs and addresses (defined in `src/lib/contract.ts`).
 
 ---
 
@@ -99,7 +99,3 @@ To run this frontend locally:
     Navigate to `http://localhost:3000` (or the specified port).
 
 6.  **Connect Wallet:** Ensure you have a browser wallet like MetaMask installed and connected to the appropriate network (e.g., Base Sepolia for testing, Base Mainnet for production, matching the deployed contract addresses in `src/lib/contract.ts`).
-
----
-
-This README provides a snapshot based on the current understanding of the `frontend` directory. It can be expanded as features like position tracking, withdrawal, and detailed historical charts are added.
