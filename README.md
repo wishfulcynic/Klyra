@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains the frontend web application for the Klyra Vaults, part of the Thesaurus Protocol. This interface provides a user-friendly way for users to discover, understand, and interact with sophisticated DeFi yield strategies, specifically:
+This repository contains the frontend web application for the Klyra, part of the Thetanuts Protocol. This interface provides a user-friendly way for users to discover, understand, and interact with sophisticated DeFi yield strategies, specifically:
 
 1.  **Directional Vaults**: Offering Call Spread (Bullish) and Put Spread (Bearish) strategies on underlying assets (initially ETH).
 2.  **Condor Vaults**: Implementing market-neutral Iron Condor strategies.
@@ -13,7 +13,7 @@ Built using Next.js, React, TypeScript, and Ethers.js, the frontend connects to 
 
 ## Core Principles & User Experience
 
-The design philosophy mirrors the simplicity and transparency goals seen in related protocols like Kairos and Odette:
+The design mirrors the simplicity and transparency goals seen in related protocols like Kairos and Odette:
 
 1.  **User-Centric Design**: Focused on making complex DeFi strategies understandable and usable for a broader audience.
 2.  **Strategy Clarity**: Clearly explaining the premise behind each vault type (Bullish, Bearish, Market-Neutral) and associated risks.
