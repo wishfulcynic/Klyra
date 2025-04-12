@@ -71,7 +71,8 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     const amountValue = Number.parseFloat(amount)
     if (isNaN(amountValue) || amountValue <= 0) return
 
-    // Removed unused var
+    // Ensure isCall is removed or commented out
+    // const isCall = directionalStrategy === "bullish"; 
     
     if (vaultType === VaultType.DIRECTIONAL) {
       // Determine isCall directly where needed
