@@ -25,7 +25,7 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
     condorVaultShares, 
     withdrawDirectional, 
     withdrawCondor, 
-    isLoading 
+    isWithdrawing
   } = useVaultData()
   
   const [amount, setAmount] = useState("")
@@ -95,7 +95,6 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
     }
   }
 
-  const isWithdrawing = isLoading
   const isDisabled =
     !address ||
     !amount ||
@@ -106,7 +105,7 @@ export function WithdrawForm({ vaultType }: WithdrawFormProps) {
     isWithdrawing ||
     (vault.isActiveDeposit ?? true);
 
-  if (isLoading && !vault) {
+  if (isWithdrawing && !vault) {
      return <div className="text-center p-4 text-gray-500">Loading vault data...</div>;
   }
   

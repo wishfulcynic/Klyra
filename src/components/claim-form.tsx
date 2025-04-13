@@ -13,7 +13,7 @@ interface ClaimFormProps {
 export function ClaimForm({ vaultType }: ClaimFormProps) {
   const { 
     claimProfits,
-    isLoading
+    isClaiming
   } = useVaultData()
 
   if (vaultType !== VaultType.DIRECTIONAL) return null
@@ -39,12 +39,12 @@ export function ClaimForm({ vaultType }: ClaimFormProps) {
       <Button
         className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium"
         onClick={handleClaim}
-        disabled={isLoading}
+        disabled={isClaiming || displayClaimableEarnings <= 0}
       >
-        {isLoading ? (
+        {isClaiming ? (
           "Processing..."
         ) : (
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 justify-center">
             <DollarSign className="h-4 w-4" />
             Claim Earnings
           </span>

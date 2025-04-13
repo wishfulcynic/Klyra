@@ -36,7 +36,12 @@ type VaultCycleInfo = [bigint, bigint, boolean, bigint]; // startTime, endTime, 
 
 export function useVaultData() {
   const { address, isConnected, /* chainId */ } = useWallet()
-  const [isLoading, setIsLoading] = useState(true)
+  const [isFetchingData, setIsFetchingData] = useState(true); // For general data loading
+  const [isApproving, setIsApproving] = useState(false);     // For approval transaction
+  const [isDepositing, setIsDepositing] = useState(false);   // For deposit transaction
+  const [isWithdrawing, setIsWithdrawing] = useState(false); // Add for withdraw
+  const [isClaiming, setIsClaiming] = useState(false);       // Add for claim
+
   const [error, setError] = useState<string | null>(null)
   const [wrapper, setWrapper] = useState<StrategyVaultWrapper | null>(null)
   
@@ -70,7 +75,7 @@ export function useVaultData() {
       } catch (error) {
         console.error("Failed to initialize contract wrapper:", error)
         setError("Failed to connect to contracts. Please check console.")
-        setIsLoading(false) // Stop loading on init error
+        setIsFetchingData(false) // Stop loading on init error
       }
     }
     
@@ -80,12 +85,12 @@ export function useVaultData() {
   // Fetch data when wrapper is available or refetch is triggered
   useEffect(() => {
     if (!wrapper) {
-        if (!isConnected) setIsLoading(false);
+        if (!isConnected) setIsFetchingData(false);
         return;
     }
     
     let mounted = true
-    setIsLoading(true)
+    setIsFetchingData(true); // Use isFetchingData
     setError(null)
     
     const fetchData = async () => {
@@ -227,7 +232,7 @@ export function useVaultData() {
         }
       } finally {
         if (mounted) {
-          setIsLoading(false)
+          setIsFetchingData(false); // Use isFetchingData
         }
       }
     }
@@ -368,6 +373,7 @@ export function useVaultData() {
       throw new Error('Wallet not connected')
     }
     
+    setIsApproving(true); // <-- Set approving state
     try {
       const tx = await wrapper.approveSusds(ethers.MaxUint256.toString())
       await tx.wait()
@@ -376,6 +382,8 @@ export function useVaultData() {
     } catch (err) {
       console.error('Error approving wrapper:', err)
       throw err
+    } finally {
+      setIsApproving(false); // <-- Reset approving state
     }
   }
   
@@ -384,6 +392,7 @@ export function useVaultData() {
       throw new Error('Wallet not connected')
     }
     
+    setIsDepositing(true); // <-- Set depositing state
     try {
       const parsedAmount = ethers.parseUnits(amount, 18)
       const tx = await wrapper.depositDirectional(parsedAmount.toString(), isCall)
@@ -393,6 +402,8 @@ export function useVaultData() {
     } catch (err) {
       console.error('Error depositing to directional vault:', err)
       throw err
+    } finally {
+      setIsDepositing(false); // <-- Reset depositing state
     }
   }
   
@@ -401,6 +412,7 @@ export function useVaultData() {
       throw new Error('Wallet not connected')
     }
     
+    setIsDepositing(true); // <-- Set depositing state
     try {
       const parsedAmount = ethers.parseUnits(amount, 18)
       const tx = await wrapper.depositCondor(parsedAmount.toString())
@@ -410,6 +422,8 @@ export function useVaultData() {
     } catch (err) {
       console.error('Error depositing to condor vault:', err)
       throw err
+    } finally {
+      setIsDepositing(false); // <-- Reset depositing state
     }
   }
   
@@ -418,6 +432,7 @@ export function useVaultData() {
       throw new Error('Wallet not connected')
     }
     
+    setIsWithdrawing(true); // <-- Set withdrawing state
     try {
       const parsedAmount = ethers.parseUnits(shareAmount, 18)
       const tx = await wrapper.withdrawDirectional(parsedAmount.toString(), isCall)
@@ -427,6 +442,8 @@ export function useVaultData() {
     } catch (err) {
       console.error('Error withdrawing from directional vault:', err)
       throw err
+    } finally {
+      setIsWithdrawing(false); // <-- Reset withdrawing state
     }
   }
   
@@ -435,6 +452,7 @@ export function useVaultData() {
       throw new Error('Wallet not connected')
     }
     
+    setIsWithdrawing(true); // <-- Set withdrawing state
     try {
       const parsedAmount = ethers.parseUnits(shareAmount, 18)
       const tx = await wrapper.withdrawCondor(parsedAmount.toString())
@@ -444,6 +462,8 @@ export function useVaultData() {
     } catch (err) {
       console.error('Error withdrawing from condor vault:', err)
       throw err
+    } finally {
+      setIsWithdrawing(false); // <-- Reset withdrawing state
     }
   }
   
@@ -452,6 +472,7 @@ export function useVaultData() {
       throw new Error('Wallet not connected')
     }
     
+    setIsClaiming(true); // <-- Set claiming state
     try {
       const tx = await wrapper.claimProfits(isDirectional, isCall)
       await tx.wait()
@@ -460,6 +481,8 @@ export function useVaultData() {
     } catch (err) {
       console.error('Error claiming profits:', err)
       throw err
+    } finally {
+      setIsClaiming(false); // <-- Reset claiming state
     }
   }
   
@@ -478,7 +501,11 @@ export function useVaultData() {
     wrapper,
     
     // State
-    isLoading,
+    isFetchingData, // <-- Return specific states
+    isApproving,
+    isDepositing,
+    isWithdrawing,
+    isClaiming,
     error,
     
     // Actions

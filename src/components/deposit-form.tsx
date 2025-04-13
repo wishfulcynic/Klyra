@@ -20,7 +20,8 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     depositDirectional,
     depositCondor,
     approveWrapper,
-    isLoading,
+    isApproving,
+    isDepositing,
     callVaultData,
     putVaultData,
     condorVaultData,
@@ -41,8 +42,8 @@ export function DepositForm({ vaultType }: DepositFormProps) {
   }
 
   const handlePercentageClick = (percentage: number) => {
-    const amount = (Number(userSusdsBalance) * percentage).toString()
-    setAmount(amount)
+    const amountValue = (Number(userSusdsBalance) * percentage).toString()
+    setAmount(amountValue)
   }
 
   const handleDeposit = async () => {
@@ -51,21 +52,22 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     const amountValue = Number.parseFloat(amount)
     if (isNaN(amountValue) || amountValue <= 0) return
 
-    if (vaultType === VaultType.DIRECTIONAL) {
-      await depositDirectional(amount, directionalStrategy === "bullish") 
-    } else {
-      await depositCondor(amount)
+    try {
+      if (vaultType === VaultType.DIRECTIONAL) {
+        await depositDirectional(amount, directionalStrategy === "bullish") 
+      } else {
+        await depositCondor(amount)
+      }
+      setAmount("")
+    } catch (err) { 
+      console.error("Deposit failed:", err); 
     }
-    
-    setAmount("")
   }
 
   // Check if approval is needed based on the boolean state from the hook
   const needsApprovalForAmount = needsApproval;
 
   const insufficientBalance = Number.parseFloat(amount || "0") > Number(userSusdsBalance)
-  const isDepositing = isLoading
-  const isApproving = isLoading
   const isDisabled =
     !address ||
     !amount ||
@@ -229,7 +231,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
           {isApproving ? (
             "Approving..."
           ) : (
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 justify-center">
               Approve sUSDS <ArrowRight className="h-4 w-4" />
             </span>
           )}
