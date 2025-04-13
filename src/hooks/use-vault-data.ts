@@ -36,13 +36,11 @@ type VaultCycleInfo = [bigint, bigint, boolean, bigint]; // startTime, endTime, 
 
 export function useVaultData() {
   const { address, isConnected, /* chainId */ } = useWallet()
-  const [isLoading, setIsLoading] = useState(true) // Start loading initially
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
-  // Wrapper instance
   const [wrapper, setWrapper] = useState<StrategyVaultWrapper | null>(null)
   
-  // Vault data - initialize to null
+  // Vault data
   const [callVaultData, setCallVaultData] = useState<VaultData | null>(null)
   const [putVaultData, setPutVaultData] = useState<VaultData | null>(null)
   const [condorVaultData, setCondorVaultData] = useState<VaultData | null>(null)
@@ -57,6 +55,7 @@ export function useVaultData() {
 
   // Interaction state
   const [needsApproval, setNeedsApproval] = useState(true)
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
   
   // Initialize wrapper (will attempt read-only init even if not connected)
   useEffect(() => {
@@ -78,12 +77,9 @@ export function useVaultData() {
     initWrapper()
   }, [address, isConnected]) // Re-init if connection status or address changes
   
-  // Fetch data when wrapper is available
+  // Fetch data when wrapper is available or refetch is triggered
   useEffect(() => {
-    // Don't fetch if wrapper hasn't initialized
     if (!wrapper) {
-        // If not connected and wrapper init failed, stop loading.
-        // If connected, wrapper init might still be in progress.
         if (!isConnected) setIsLoading(false);
         return;
     }
@@ -120,7 +116,7 @@ export function useVaultData() {
                }
              } catch (err) {
                console.error('Error checking allowance:', err);
-               // Keep previous state or set default?
+               if (mounted) setNeedsApproval(true);
              }
             
              try {
@@ -245,7 +241,7 @@ export function useVaultData() {
       mounted = false
       clearInterval(intervalId)
     }
-  }, [wrapper, isConnected, address]) // Rerun if wrapper, connection, or address changes
+  }, [wrapper, isConnected, address, refetchTrigger]) // Rerun if wrapper, connection, or address changes
   
   
   /**
@@ -375,7 +371,7 @@ export function useVaultData() {
     try {
       const tx = await wrapper.approveSusds(ethers.MaxUint256.toString())
       await tx.wait()
-      setNeedsApproval(false)
+      setRefetchTrigger(count => count + 1);
       return true
     } catch (err) {
       console.error('Error approving wrapper:', err)
@@ -392,8 +388,7 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(amount, 18)
       const tx = await wrapper.depositDirectional(parsedAmount.toString(), isCall)
       await tx.wait()
-      // Trigger data refresh after successful tx
-      setWrapper(wrapper); // Re-setting wrapper triggers useEffect
+      setRefetchTrigger(count => count + 1);
       return true
     } catch (err) {
       console.error('Error depositing to directional vault:', err)
@@ -410,8 +405,7 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(amount, 18)
       const tx = await wrapper.depositCondor(parsedAmount.toString())
       await tx.wait()
-      // Trigger data refresh after successful tx
-       setWrapper(wrapper);
+      setRefetchTrigger(count => count + 1);
       return true
     } catch (err) {
       console.error('Error depositing to condor vault:', err)
@@ -428,8 +422,7 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(shareAmount, 18)
       const tx = await wrapper.withdrawDirectional(parsedAmount.toString(), isCall)
       await tx.wait()
-      // Trigger data refresh after successful tx
-       setWrapper(wrapper);
+      setRefetchTrigger(count => count + 1);
       return true
     } catch (err) {
       console.error('Error withdrawing from directional vault:', err)
@@ -446,8 +439,7 @@ export function useVaultData() {
       const parsedAmount = ethers.parseUnits(shareAmount, 18)
       const tx = await wrapper.withdrawCondor(parsedAmount.toString())
       await tx.wait()
-      // Trigger data refresh after successful tx
-       setWrapper(wrapper);
+      setRefetchTrigger(count => count + 1);
       return true
     } catch (err) {
       console.error('Error withdrawing from condor vault:', err)
@@ -463,8 +455,7 @@ export function useVaultData() {
     try {
       const tx = await wrapper.claimProfits(isDirectional, isCall)
       await tx.wait()
-      // Trigger data refresh after successful tx
-       setWrapper(wrapper);
+      setRefetchTrigger(count => count + 1);
       return true
     } catch (err) {
       console.error('Error claiming profits:', err)

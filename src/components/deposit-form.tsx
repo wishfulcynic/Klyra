@@ -24,6 +24,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     callVaultData,
     putVaultData,
     condorVaultData,
+    needsApproval,
   } = useVaultData()
   const [amount, setAmount] = useState("")
   const [directionalStrategy, setDirectionalStrategy] = useState<"bullish" | "bearish">("bullish")
@@ -59,8 +60,9 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     setAmount("")
   }
 
-  const userAllowance = 0
-  const needsApprovalForAmount = Number.parseFloat(amount || "0") > userAllowance
+  // Check if approval is needed based on the boolean state from the hook
+  const needsApprovalForAmount = needsApproval;
+
   const insufficientBalance = Number.parseFloat(amount || "0") > Number(userSusdsBalance)
   const isDepositing = isLoading
   const isApproving = isLoading
