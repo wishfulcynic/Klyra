@@ -19,10 +19,7 @@ Klyra is a web interface for an automated dual-vault strategy system built on th
 
 *   Dual Strategy Vaults: Choose between Rangebound (market-neutral iron condor) and Directional (bullish or bearish) strategy vaults in a simple UI. The interface clearly explains each strategy and its risks.
 *   Unified Deposits & Switching: All deposits go through a unified StrategyVaultWrapper contract, so users deposit sUSDS once and can switch strategies without manual withdrawal. The wrapper handles ERC-20 approvals, vault routing, and maintains per-user vault share balances for seamless strategy changes.
-*   Real-Time Metrics: View live vault performance metrics including APY, total value locked (TVL), current share price, and historical performance (if available). This transparency helps in comparing strategies and tracking results.
-*   User-Friendly Deposit Flow: Connect a Web3 wallet (e.g. MetaMask) and deposit stablecoins easily. The deposit form shows your sUSDS balance, lets you input an amount (with 25/50/75/100% quick-fill buttons), and estimates the vault shares you'll receive.
-*   Automated Transactions: The app automatically prompts for any required sUSDS token approval and then submits the deposit transaction to the wrapper contract. Transaction statuses are displayed so users get feedback on successful deposits.
-*   Built with Modern Stack: This frontend is built with Next.js (React + TypeScript) and styled with Tailwind CSS for a responsive UI. It uses Ethers.js to interact with contracts on-chain, ensuring real-time data updates and smooth transaction handling.
+
 
 ## How It Works
 
@@ -34,10 +31,6 @@ Klyra is a web interface for an automated dual-vault strategy system built on th
 6.  Deposit to Vault: After approval, the user confirms the deposit. The frontend sends the deposit transaction to the StrategyVaultWrapper contract. Under the hood, the wrapper contract routes the funds into the selected vault strategy on the user's behalf.
 7.  Share Issuance: The chosen vault contract issues vault shares representing the user's stake in that vault. Instead of directly holding those shares, the wrapper contract holds them and updates the user's internal balance. This design lets the platform track user positions and reinvest or switch strategies easily.
 8.  Confirmation: Once the transaction is confirmed on-chain, the UI provides feedback (e.g. "Deposit Successful"). The user now starts earning yield according to the vault's strategy. In future updates, the interface may show the user's position details and enable withdrawals or strategy switches.
-
-## One-Click Strategy Switching
-
-Because the wrapper contract manages the user's vault shares, switching strategies is streamlined. For example, a user in the Directional vault can switch to the Condor vault with a single action. The wrapper will automatically withdraw the user's shares from the Directional vault and deposit the proceeds into the Condor vault (or vice versa) in one transaction. This saves time and gas fees, as users don't have to manually withdraw to sUSDS and then redeposit. The result is a smooth transition between strategies, maintaining continuous yield generation.
 
 ## Vault Strategies
 
@@ -102,13 +95,3 @@ If you want to run the Klyra frontend locally for development or testing, follow
 
 5.  Open the App: Navigate to `http://localhost:3000` in your browser. Connect your wallet (MetaMask or others) and switch it to the Base network (Chain ID 8453) to begin testing the app. You should now be able to view the vaults and perform test deposits (you'll need some sUSDS on Base testnet or mainnet, depending on your environment).
 6.  (Optional) Build for Production: To create an optimized production build, you can run `npm run build`. This will compile the Next.js application for production (outputting to the `.next` folder). Then run `npm start` to serve the production build. Ensure you have set the appropriate environment variables for production as well.
-
-## Smart Contract Overview & Security
-
-For developers interested in the smart contracts: the Solidity source code for the vaults and related option contracts is included in the repository (see the `contracts` directory). The contracts inherit from Thetanuts's audited frameworks and are designed to be immutable (no upgrade proxies) for safety. The wrapper contract was developed to add an additional abstraction layer for user convenience; careful attention was given to ensure that it can only move funds between the approved vaults and cannot arbitrarily send funds elsewhere. All vault strategies are fully collateralized and rely on Chainlink or similar oracles for price feeds to settle options. Fees are minimal (typically a small percentage of premiums or collateral, per Thetanuts protocol standards) and are transparently handled by the vault contracts.
-
-When using Klyra, remember that while these vaults automate complex strategies, they still carry risks inherent to options trading (e.g. loss of yield or some collateral in adverse scenarios). Users are encouraged to review the strategy details (provided in the UI and above) and only invest funds that fit their risk tolerance. Klyra's aim is to democratize access to advanced options strategies by handling the complexity – combining a user-friendly frontend with robust smart contracts – so that both novice and experienced DeFi users can leverage options-based yields with confidence.
-
-## Conclusion
-
-Klyra provides a clean and unified platform to explore sophisticated option vault strategies without needing to manually trade options. By integrating two distinct strategies (rangebound and directional) under one roof and leveraging Thetanuts Protocol's infrastructure, Klyra simplifies the user experience to deposit, select strategy, and earn yield. Developers can easily set up and run the frontend locally, and users can access the live application deployed at klyra-production.up.railway.app. As the project evolves, features like position tracking, withdrawals, and more historical analytics will be added to the UI to enhance transparency. Whether you want to earn stable yields in sideways markets or take a leveraged bet on market moves – Klyra's dual vault system has you covered in a few clicks.
