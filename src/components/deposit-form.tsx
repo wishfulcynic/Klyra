@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { VaultType } from "@/lib/types"
@@ -8,7 +8,6 @@ import { useWallet } from "@/hooks/use-wallet"
 import { useVaultData } from "@/hooks/use-vault-data"
 import { formatCurrency } from "@/lib/utils"
 import { AlertCircle, Info, CreditCard, Wallet, ArrowRight, TrendingUp, TrendingDown } from "lucide-react"
-import { ethers } from "ethers"
 
 interface DepositFormProps {
   vaultType: VaultType
@@ -25,65 +24,16 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     callVaultData,
     putVaultData,
     condorVaultData,
-    wrapper
   } = useVaultData()
   const [amount, setAmount] = useState("")
   const [directionalStrategy, setDirectionalStrategy] = useState<"bullish" | "bearish">("bullish")
-  const [contractInfo, setContractInfo] = useState<{ numContracts: number; strikes: number[] }>({
-    numContracts: 0,
-    strikes: [],
-  })
-  const [calculationError, setCalculationError] = useState<string | null>(null)
+  const [calculationError] = useState<string | null>(null)
 
   // Get the appropriate vault data based on vault type
   const vault = vaultType === VaultType.DIRECTIONAL ? 
     (directionalStrategy === "bullish" ? callVaultData : putVaultData) : 
     condorVaultData
   const vaultColor = vaultType === VaultType.DIRECTIONAL ? "indigo" : "purple"
-
-  // Update contract info when amount changes, using actual contract calls
-  useEffect(() => {
-    const updateContractInfo = async () => {
-      setCalculationError(null)
-      if (!wrapper || !amount || isNaN(Number.parseFloat(amount)) || Number.parseFloat(amount) <= 0) {
-        setContractInfo({ numContracts: 0, strikes: [] })
-        return
-      }
-
-      try {
-        // Parse amount to 18 decimals for sUSD
-        const parsedAmount = ethers.parseUnits(amount, 18).toString()
-        let contractsBigInt: bigint
-        let strikesBigInt: bigint[]
-
-        if (vaultType === VaultType.DIRECTIONAL) {
-          const isCall = directionalStrategy === "bullish"
-          const result = await wrapper.calculateDirectionalContracts(parsedAmount, isCall)
-          contractsBigInt = result.contracts
-          strikesBigInt = result.strikes
-        } else {
-          const result = await wrapper.calculateCondorContracts(parsedAmount)
-          contractsBigInt = result.contracts
-          strikesBigInt = result.strikes
-        }
-
-        // Format strikes (assuming 8 decimals for price)
-        const formattedStrikes = strikesBigInt.map(s => Number(ethers.formatUnits(s, 8)))
-
-        setContractInfo({
-          numContracts: Number(contractsBigInt),
-          strikes: formattedStrikes
-        })
-
-      } catch (error) {
-        console.error("Error calculating contract info:", error)
-        setContractInfo({ numContracts: 0, strikes: [] })
-        setCalculationError("Failed to calculate contract details.")
-      }
-    }
-
-    updateContractInfo()
-  }, [amount, vaultType, directionalStrategy, wrapper])
 
   const handleMaxClick = () => {
     setAmount(userSusdsBalance)
