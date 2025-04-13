@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { VaultType } from "@/lib/types"
@@ -73,9 +73,17 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     isApproving ||
     isDepositing
 
-  // Calculate estimated shares
-  const estimatedShares = amount && !isNaN(Number.parseFloat(amount)) && vault && vault.sharePrice ? 
-    Number.parseFloat(amount) / Number.parseFloat(vault.sharePrice) : 0
+  // Calculate estimated shares using useMemo to handle loading state
+  const estimatedShares = useMemo(() => {
+    const parsedAmount = Number.parseFloat(amount || "0")
+    const currentSharePrice = Number.parseFloat(vault?.sharePrice || "0")
+
+    if (parsedAmount > 0 && currentSharePrice > 0) {
+      return parsedAmount / currentSharePrice
+    } else {
+      return 0
+    }
+  }, [amount, vault?.sharePrice]) // Dependencies: amount and sharePrice
 
   return (
     <div className="space-y-6">
