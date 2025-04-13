@@ -83,7 +83,7 @@ export function DepositForm({ vaultType }: DepositFormProps) {
     } else {
       return 0
     }
-  }, [amount, vault?.sharePrice]) // Dependencies: amount and sharePrice
+  }, [amount, vault]) // Dependencies: amount and the vault object itself
 
   return (
     <div className="space-y-6">
